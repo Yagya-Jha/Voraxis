@@ -1,0 +1,232 @@
+VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
+
+================================================================================
+1. SEARCH ALGORITHMS
+================================================================================
+
+[x] 1.1 Minimax (COMPLETED)
+    [x] Explore candidate moves recursively.
+    [x] Assume both players choose moves that maximize their own outcome.
+    [x] Evaluate positions at the search horizon (terminal/leaf nodes).
+    [x] Return scores consistently from the perspective of the side to move.
+    [x] Handle checkmate and draw scores separately from ordinary positional scores.
+
+[x] 1.2 Negamax (COMPLETED)
+    [x] Use the zero-sum property of chess to simplify Minimax.
+    [x] Express each node’s score from the current side’s perspective: score = -negamax(...).
+    [x] Keep score perspective consistent throughout search and evaluation.
+
+[x] 1.3 Alpha-Beta Pruning (COMPLETED)
+    [x] Maintain alpha (best score already guaranteed for side to move) and beta (opponent's cutoff bound).
+    [x] Stop searching moves when score >= beta (beta cutoff).
+    [x] Test against plain Minimax at shallow depths; node counts drop drastically but scores agree.
+
+[ ] 1.4 Iterative Deepening
+    - Search depth 1, then 2, then 3, iteratively.
+    - Retain the best move from the last completed iteration.
+    - Allow search to stop safely when time or node limits expire.
+
+[ ] 1.5 Principal Variation Search (PVS)
+    - Search first move with full alpha-beta window [alpha, beta].
+    - Search subsequent moves with null/zero window [alpha, alpha+1].
+    - Re-search with full window only if a move proves superior.
+
+[ ] 1.6 Quiescence Search
+    - Search beyond nominal horizon for tactical stability (captures, promotions, checks).
+    - Stand-pat evaluation threshold.
+    - Avoid horizon effect.
+
+[ ] 1.7 Aspiration Windows
+    - Narrow initial window around previous iteration's score [score - delta, score + delta].
+    - Re-search wider on fail-low or fail-high.
+
+[ ] 1.8 Check Extensions
+    - Extend search depth by 1 ply when in check.
+
+[ ] 1.9 Late Move Reductions (LMR)
+    - Search quiet moves late in the move list at reduced depth.
+    - Re-search at full depth if they exceed alpha.
+
+[ ] 1.10 Null Move Pruning
+    - Pass turn to verify if opponent can still not breach beta.
+    - Guard against zugzwang in late endgame.
+
+[ ] 1.11 Futility Pruning
+    - Prune hopeless quiet moves near leaf nodes if eval + margin < alpha.
+
+[ ] 1.12 Razoring
+    - Early quiescence drop at shallow pre-frontier nodes if eval is far below alpha.
+
+[ ] 1.13 Singular Extensions
+    - Extend search if the TT move is significantly better than all alternatives.
+
+[ ] 1.14 Other Search Controls & Mate Distance Pruning
+    - Maximum ply limit (e.g. 64 / 128).
+    - Mate-distance scoring adjustments (closer mate is scored higher).
+    - Node counters & search cancellation flag.
+
+================================================================================
+2. TRANSPOSITION TABLE (TT)
+================================================================================
+
+[x] 2.1 Zobrist Hashing (COMPLETED)
+    [x] Random 64-bit keys for pieces on squares.
+    [x] Side to move key.
+    [x] Castling rights keys.
+    [x] En-passant square keys.
+    [x] Incremental updates on make/unmake + full computation verification.
+
+[ ] 2.2 Table Entries
+    - 64-bit Zobrist key / verification signature.
+    - Search depth.
+    - Evaluated score (adjusted for mate distance).
+    - Bound flag: EXACT, LOWERBOUND (beta cutoff), UPPERBOUND (all-node fail-low).
+    - Best move (hash move).
+    - Age / generation.
+
+[ ] 2.3 Probe and Store Logic
+    - Cutoff conditions based on depth and stored bound.
+    - Extract TT move for move ordering even when depth is insufficient for cutoff.
+    - Convert mate scores to/from ply-independent format.
+
+[ ] 2.4 Replacement Policy & Sizing
+    - Depth-preferred or 2-tier replacement scheme.
+    - Configurable hash size via UCI ("setoption name Hash value X").
+
+================================================================================
+3. MOVE GENERATION AND MOVE ORDERING
+================================================================================
+
+[x] 3.1 Move Generation Correctness (COMPLETED)
+    [x] All legal piece moves (bitboard engine).
+    [x] Absolute pins, checks, double checks.
+    [x] Castling through / out of check verification.
+    [x] En passant legality (including horizontal discovered check).
+    [x] Promotions to Q, R, B, N.
+    [x] Verified across 22 benchmark positions via Perft suite (12.5M nodes).
+
+[ ] 3.2 Move Ordering
+    - 1. TT / Hash move.
+    - 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker).
+    - 3. Queen promotions.
+    - 4. Killer moves (quiet moves causing beta cutoffs at same ply).
+    - 5. History heuristic (quiet moves indexed by [piece][to_square]).
+    - 6. Countermove heuristic.
+    - 7. Bad captures (losing captures).
+    - 8. Remaining quiet moves.
+
+[ ] 3.3 Static Exchange Evaluation (SEE)
+    - Fast capture exchange evaluation to prune or order losing captures.
+
+================================================================================
+4. EVALUATION FUNCTION
+================================================================================
+
+[x] 4.1 Basic Material & PSTs (BASELINE COMPLETED)
+    [x] Standard piece values (P=100, N=320, B=330, R=500, Q=900).
+    [x] Piece-square tables for positional play.
+
+[ ] 4.2 Tapered Evaluation & Phase Calculation
+    - Continuous game phase transition (Opening/Middlegame -> Endgame).
+    - Separate MG and EG piece square tables interpolated by game phase.
+
+[ ] 4.3 Pawn Structure Evaluation
+    - Doubled pawns penalty.
+    - Isolated pawns penalty.
+    - Backward pawns penalty.
+    - Passed pawns bonus (scaled by advancement and protected status).
+    - Connected pawns and pawn phalanxes.
+
+[ ] 4.4 Piece Activity & Coordination
+    - Bishop pair bonus.
+    - Rooks on open and semi-open files.
+    - Rooks on 7th rank.
+    - Knight outposts on central protected squares.
+    - Bad bishops blocked by friendly pawns.
+
+[ ] 4.5 King Safety
+    - Pawn shelter shield in front of castled king.
+    - Open files / semi-open files towards king.
+    - Virtual attacker count and king zone danger tables.
+
+[ ] 4.6 Endgame Specific Knowledge
+    - King centralization towards passed pawns.
+    - Cornering lone king in K+Q vs K, K+R vs K.
+
+================================================================================
+5. TIME MANAGEMENT AND SEARCH CONTROL
+================================================================================
+
+[ ] 5.1 Time Allocation
+    - Parse wtime, btime, winc, binc, movestogo from UCI "go".
+    - Allocate optimum time and maximum hard time per move.
+    - Reserve safety margin for communication lag.
+
+[ ] 5.2 Search Limits & Interruption
+    - Check time / node limit periodically in search (e.g. every 2048 nodes).
+    - Support UCI "stop" command asynchronously.
+
+================================================================================
+6. OPENING BOOK
+================================================================================
+
+[ ] 6.1 Polyglot Opening Book Support
+    - Binary Polyglot .bin file parser.
+    - Zobrist hashing matching Polyglot specification.
+    - Weighted move selection among book options.
+    - UCI "OwnBook" option toggle and "BookPath".
+
+================================================================================
+7. ENDGAME TABLEBASES
+================================================================================
+
+[ ] 7.1 Syzygy Tablebase Probing
+    - Fathom / Syzygy WDL (Win/Draw/Loss) probing during search.
+    - DTZ (Distance To Zero) probing at root.
+    - UCI "SyzygyPath" option support.
+
+================================================================================
+8. DRAW AND TERMINAL POSITION HANDLING
+================================================================================
+
+[x] 8.1 Detection & Rules (COMPLETED)
+    [x] Checkmate detection.
+    [x] Stalemate detection.
+    [x] Threefold repetition history detection.
+    [x] Fifty-move rule clock detection.
+    [x] Insufficient material detection.
+[ ] 8.2 In-Search Draw & Mate Scoring
+    - Evaluate 3-fold repetition and 50-move rule directly within search tree.
+    - Score checkmates with distance penalty (prefer shorter mates).
+
+================================================================================
+9. UCI PROTOCOL ENHANCEMENTS
+================================================================================
+
+[x] 9.1 Core UCI (COMPLETED)
+    [x] uci, isready, ucinewgame, position, quit.
+    [x] go -> bestmove output.
+[ ] 9.2 UCI Search Info Streaming
+    - Periodic "info depth <d> seldepth <sd> score cp/mate <sc> nodes <n> nps <rate> time <ms> pv <moves...>"
+[ ] 9.3 Engine Options Registration
+    - Register Hash, Threads, Move Overhead, etc.
+
+================================================================================
+10. PERFORMANCE & OPTIMIZATIONS
+================================================================================
+
+[x] 10.1 Core Representation (COMPLETED)
+    [x] Bitboards for board & attack representation.
+    [x] Make/undo move.
+[ ] 10.2 Magic Bitboards (Optional Slider Speedup)
+    - Precomputed magic bitboards for sliding rooks and bishops instead of ray iterations.
+[ ] 10.3 Move Generation Staging
+    - Generate captures first during search, only generate quiet moves if needed.
+
+================================================================================
+11. MULTITHREADING (LAZY SMP)
+================================================================================
+
+[ ] 11.1 Lazy SMP Multi-core Search
+    - Worker threads searching the tree with shared Transposition Table.
+    - Thread pool management, clean start/stop synchronization.

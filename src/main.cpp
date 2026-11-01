@@ -1,43 +1,33 @@
 #include <iostream>
 #include <string>
-#include <array>
+#include "board.h"
+#include "movegen.h"
+#include "uci.h"
 
-class Board {
-public:
-    std::array<char, 64> squares{};
+int main(int argc, char* argv[]) {
+    // Initialize lookup tables and zobrist keys
+    Voraxis::Movegen::initAttackTables();
+    Voraxis::Board::initZobrist();
 
-    Board() {
-        squares.fill('.');
-
-        const std::string backRank = "rnbqkbnr";
-
-        for (int file = 0; file < 8; ++file) {
-            squares[file] = backRank[file];
-            squares[8 + file] = 'p';
-
-            squares[48 + file] = 'P';
-            squares[56 + file] = backRank[file] - 'a' + 'A';
+    // Check command line arguments for direct testing
+    if (argc > 1) {
+        std::string arg = argv[1];
+        if (arg == "test" || arg == "--test") {
+            bool passed = Voraxis::Movegen::runPerftSuite();
+            return passed ? 0 : 1;
+        } else if (arg == "perft" && argc > 2) {
+            int depth = std::stoi(argv[2]);
+            Voraxis::Board board;
+            uint64_t nodes = Voraxis::Movegen::perft(board, depth);
+            std::cout << "Perft(" << depth << ") = " << nodes << "\n";
+            return 0;
         }
     }
 
-    void print() const {
-        for (int rank = 0; rank < 8; ++rank) {
-            std::cout << 8 - rank << " ";
-
-            for (int file = 0; file < 8; ++file) {
-                std::cout << squares[rank * 8 + file] << ' ';
-            }
-
-            std::cout << '\n';
-        }
-
-        std::cout << "\n  a b c d e f g h\n";
-    }
-};
-
-int main() {
-    Board board;
-    board.print();
+    // Start UCI command loop
+    Voraxis::UCI::loop();
 
     return 0;
 }
+
+//g++ -O3 -std=c++17 src/main.cpp src/board.cpp src/movegen.cpp src/evaluate.cpp src/search.cpp src/uci.cpp -o build/voraxis.exeg++ -O3 -std=c++17 src/main.cpp src/board.cpp src/movegen.cpp src/evaluate.cpp src/search.cpp src/uci.cpp -o build/voraxis.exe

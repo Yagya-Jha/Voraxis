@@ -9,3 +9,5 @@
 .vscode/
 *.pdb
 *.ilk
+__pycache__/
+*.pyc

@@ -1,0 +1,18 @@
+[Event "?"]
+[Site "?"]
+[Date "2026.11.01"]
+[Round "1"]
+[White "Voraxis"]
+[Black "Stockfish"]
+[Result "0-1"]
+[ECO "C20"]
+[GameDuration "00:00:09"]
+[GameEndTime "2026-11-01T13:44:39.924 India Standard Time"]
+[GameStartTime "2026-11-01T13:44:30.836 India Standard Time"]
+[Opening "King's pawn game"]
+[PlyCount "2"]
+[Termination "time forfeit"]
+[TimeControl "5+0.1"]
+
+1. e4 {1.5s} e5 {-0.23/20 0.85s, White loses on time} 0-1
+

@@ -1,0 +1,147 @@
+================================================================================
+                    VORAXIS CHESS ENGINE - RUNNING INSTRUCTIONS
+================================================================================
+
+This document contains instructions for testing, running matches, and viewing
+results for the Voraxis chess engine.
+
+You can run commands using either:
+  python -m tests <command>
+or
+  python tests/run.py <command>
+
+Both methods work identically.
+
+--------------------------------------------------------------------------------
+1. SETUP & ENVIRONMENT VALIDATION
+--------------------------------------------------------------------------------
+Before running matches, verify that Python, Voraxis, Stockfish, Cute Chess CLI,
+and output directories are properly configured:
+
+  python -m tests check
+
+What this does:
+  - Verifies Python version (3.8+ required).
+  - Confirms cutechess-cli exists and runs.
+  - Starts Voraxis and Stockfish, sends the UCI "uci" handshake, and verifies
+    that "uciok" is received.
+  - Lists engine names, authors, and available UCI options.
+  - Tests write permissions for PGN and Results output directories.
+  - Exits with status 0 on success, or 1 if any dependency check fails.
+
+
+--------------------------------------------------------------------------------
+2. RUNNING CHESS MATCHES
+--------------------------------------------------------------------------------
+
+A. Default Match (No optional arguments):
+   python -m tests match
+
+B. Specifying Number of Games:
+   python -m tests match --games 100
+   (or short flag: -g 100)
+
+C. Parallel / Simultaneous Games:
+   python -m tests match --games 100 --parallel 4
+   (or short flags: -g 100 -p 4)
+   This uses Cute Chess CLI's native concurrency to run up to 4 games at once.
+
+D. Custom Time Controls:
+   Base time + increment:
+     python -m tests match --games 20 --tc 10+0.1
+     python -m tests match --games 10 --tc 5+0.1
+
+   Fixed time per move:
+     python -m tests match --games 10 --tc st=1
+     (Each engine is allotted 1 second per move)
+
+E. Custom Executable Paths (Optional Override):
+     python -m tests match --voraxis "build\voraxis.exe" --stockfish "C:\path\to\stockfish.exe"
+
+F. Custom PGN Output Destination (Optional Override):
+     python -m tests match --games 10 --pgn-out "tests\pgns\my_custom_match.pgn"
+
+
+--------------------------------------------------------------------------------
+3. WHAT HAPPENS WITH DEFAULT SETTINGS (NO CLI INPUT)
+--------------------------------------------------------------------------------
+If you run the match runner with zero extra command-line flags:
+
+  Command:
+    python -m tests match
+
+The following default values and behaviors are automatically applied:
+  1. Number of games:
+     Plays exactly 10 games (configured by DEFAULT_GAMES in tests/config.py).
+
+  2. Concurrency:
+     Plays 1 game at a time sequentially (DEFAULT_PARALLEL = 1).
+
+  3. Time Control:
+     Each game uses 10 seconds base time + 0.1 second increment per move
+     (DEFAULT_TIME_CONTROL = "10+0.1").
+
+  4. Engine Executables:
+     - Voraxis: build\voraxis.exe
+     - Stockfish: C:\Users\Suraj\Desktop\PiXeLaTED\Yagya Study\CHESS\stockfish\stockfish-windows-x86-64-universal.exe
+     - Match Manager: C:\Users\Suraj\AppData\Local\Programs\Cute Chess\cutechess-cli.exe
+
+  5. Color Alternation:
+     Cute Chess CLI automatically alternates starting colors each game.
+     In a 10-game match:
+       - Voraxis plays 5 games as White
+       - Voraxis plays 5 games as Black
+
+  6. File Output:
+     - Game PGN: saved automatically to tests/pgns/pgn_<YYYYMMDD_HHMMSS>.pgn
+     - Results JSON: saved automatically to tests/results/results_<YYYYMMDD_HHMMSS>.json
+     - Latest Link: tests/results/latest_match.json is updated with this match.
+
+  7. Real-Time Terminal Output:
+     - Prints game start events: "-> Started game X of 10 (Player1 vs Player2)"
+     - Prints game finish events: "[+] Finished game X (Player1 vs Player2): Result {reason}"
+     - Prints match summary report showing total games, wins, losses, draws,
+       failed games, and score percentage:
+         Score % = (wins + draws / 2) / total games * 100
+
+Note: If you run with no command at all:
+  Command:
+    python -m tests
+Behavior:
+  Displays the CLI help screen showing the available subcommands (check, match, results).
+
+
+--------------------------------------------------------------------------------
+4. VIEWING LATEST MATCH RESULTS
+--------------------------------------------------------------------------------
+To view the score summary and game records of the most recently completed match
+without running any new games:
+
+  python -m tests results
+
+What this displays:
+  - Timestamp of the match
+  - Engines involved
+  - Total games played, concurrency, and time control used
+  - Voraxis Wins, Losses, Draws, and Failed games
+  - Final Voraxis Score Percentage
+  - Performance breakdown as White vs Black (+W -L =D)
+  - Paths to the generated PGN file and summary JSON file
+  - Game-by-game results and termination reasons
+
+
+--------------------------------------------------------------------------------
+5. RECOMPILING THE C++ ENGINE (IF C++ CODE IS MODIFIED)
+--------------------------------------------------------------------------------
+If you modify any C++ files under src/, recompile the voraxis.exe executable using:
+
+  g++ -O3 -std=c++17 src/main.cpp src/board.cpp src/movegen.cpp src/evaluate.cpp src/search.cpp src/uci.cpp -o build/voraxis.exe
+
+
+--------------------------------------------------------------------------------
+6. ENGINE INTERNAL PERFT TEST SUITE
+--------------------------------------------------------------------------------
+To run the built-in C++ move generation test suite (startpos, Kiwipete, endgames):
+
+  .\build\voraxis.exe test
+================================================================================
