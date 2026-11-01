@@ -21,10 +21,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Stop searching moves when score >= beta (beta cutoff).
     [x] Test against plain Minimax at shallow depths; node counts drop drastically but scores agree.
 
-[ ] 1.4 Iterative Deepening
-    - Search depth 1, then 2, then 3, iteratively.
-    - Retain the best move from the last completed iteration.
-    - Allow search to stop safely when time or node limits expire.
+[x] 1.4 Iterative Deepening (COMPLETED)
+    [x] Search depth 1, then 2, then 3, iteratively.
+    [x] Retain the best move from the last completed iteration.
+    [x] Allow search to stop safely when time or node limits expire.
 
 [ ] 1.5 Principal Variation Search (PVS)
     - Search first move with full alpha-beta window [alpha, beta].

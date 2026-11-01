@@ -51,8 +51,8 @@ if(board.getSideToMove()==WHITE){
 
 int bestScore = MIN;
 Move m = legalMoves[0];
-int alpha = -1000000; int beta = 1000000;
-for(int currDepth=1; currDepth < maxDepth; ++currDepth){
+for(int currDepth=1; currDepth <= maxDepth; ++currDepth){
+    int alpha = -1000000; int beta = 1000000;
     for(Move move: legalMoves){
         board.applyMove(move);
         int score = -negamax(board, currDepth-1, -beta, -alpha);
