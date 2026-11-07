@@ -31,10 +31,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     - Search subsequent moves with null/zero window [alpha, alpha+1].
     - Re-search with full window only if a move proves superior.
 
-[ ] 1.6 Quiescence Search
-    - Search beyond nominal horizon for tactical stability (captures, promotions, checks).
-    - Stand-pat evaluation threshold.
-    - Avoid horizon effect.
+[x] 1.6 Quiescence Search (COMPLETED)
+    [x] Search beyond nominal horizon for tactical stability (captures, promotions).
+    [x] Stand-pat evaluation threshold.
+    [x] Avoid horizon effect.
 
 [ ] 1.7 Aspiration Windows
     - Narrow initial window around previous iteration's score [score - delta, score + delta].
