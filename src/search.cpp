@@ -66,10 +66,36 @@ for(int currDepth=1; currDepth <= maxDepth; ++currDepth){
 return m;
 }
 
+int quiescence(Board& board, int alpha, int beta){
+    int standPat = (board.getSideToMove()==WHITE?1:-1) * Evaluate::evaluate(board);
+    if(standPat >= beta){ 
+        return beta;
+    }
+    if(standPat > alpha){
+        alpha = standPat;
+    }
+    std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
+    for(const Move& move: legalMoves){
+        if(move.captured==NO_PIECE && move.promotion == NO_PIECE){
+            continue;
+        }
+        board.applyMove(move);
+        int score = -quiescence(board, -beta, -alpha);
+        board.undoMove(move);
+        if(score >= beta){
+            return beta;
+        }
+        if(score > alpha){
+            alpha = score;
+        }
+    }
+    return alpha;
+
+}
 
 int negamax(Board& board, int depth, int alpha, int beta){
     if(depth==0){
-        return board.getSideToMove()==WHITE?Evaluate::evaluate(board):-Evaluate::evaluate(board);
+        return quiescence(board, alpha, beta);
     }
 
     std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
