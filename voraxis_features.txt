@@ -107,8 +107,8 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 
 [ ] 3.2 Move Ordering
     - 1. TT / Hash move.
-    - 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker).
-    - 3. Queen promotions.
+    [x] 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker).
+    [x] 3. Queen promotions.
     - 4. Killer moves (quiet moves causing beta cutoffs at same ply).
     - 5. History heuristic (quiet moves indexed by [piece][to_square]).
     - 6. Countermove heuristic.
