@@ -14,7 +14,9 @@ Move getBestMove(Board& board);
 //int minimax(Board& board, int depth, bool isMaximizing);
 
 int quiescence(Board& board, int alpha, int beta);
-
+int scoreMove(const Move move);
+int getPieceValue(int pType);
+std::vector<Move> returnSortedMoves(Board& board);
 //negamax search algorithm
 int negamax(Board& board, int depth, int alpha, int beta);
 } // namespace Search

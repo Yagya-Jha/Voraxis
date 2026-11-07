@@ -13,7 +13,7 @@ namespace Search {
 
 Move getBestMove(Board& board) {
     const int maxDepth = 4;
-    std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
+    std::vector<Move> legalMoves = returnSortedMoves(board);
     if (legalMoves.empty()) {
         return Move();
     }
@@ -66,6 +66,15 @@ for(int currDepth=1; currDepth <= maxDepth; ++currDepth){
 return m;
 }
 
+std::vector<Move> returnSortedMoves(Board& board){
+    std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
+    // Sort moves in descending order (highest score first)
+    std::sort(legalMoves.begin(), legalMoves.end(), [](const Move& a, const Move& b) {
+        return scoreMove(a) > scoreMove(b);
+    });
+    return legalMoves;
+}
+
 int quiescence(Board& board, int alpha, int beta){
     int standPat = (board.getSideToMove()==WHITE?1:-1) * Evaluate::evaluate(board);
     if(standPat >= beta){ 
@@ -74,7 +83,7 @@ int quiescence(Board& board, int alpha, int beta){
     if(standPat > alpha){
         alpha = standPat;
     }
-    std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
+    std::vector<Move> legalMoves = returnSortedMoves(board);
     for(const Move& move: legalMoves){
         if(move.captured==NO_PIECE && move.promotion == NO_PIECE){
             continue;
@@ -93,12 +102,32 @@ int quiescence(Board& board, int alpha, int beta){
 
 }
 
+int getPieceValue(int pType){
+    constexpr int arr[] = {100, 300, 350, 500, 900, 10000};
+    return arr[pType];
+}
+
+//score for MVVLVA
+int scoreMove(const Move move){
+    int score = 0;
+    if (move.captured != NO_PIECE){
+        score = 10000;
+        int vic_val = getPieceValue(pieceType(move.captured));
+        int att_val = getPieceValue(pieceType(move.piece));
+        score +=vic_val*10 - att_val;
+    }
+    if(move.promotion != NO_PIECE){
+        score +=9000;
+    }
+    return score;
+}
+
 int negamax(Board& board, int depth, int alpha, int beta){
     if(depth==0){
         return quiescence(board, alpha, beta);
     }
 
-    std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
+    std::vector<Move> legalMoves = returnSortedMoves(board);
 
     if (legalMoves.empty()) {
         if (Movegen::inCheck(board, board.getSideToMove())) {
