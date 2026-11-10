@@ -3,6 +3,7 @@
 #include "board.h"
 #include "movegen.h"
 #include "book.h"
+#include "syzygy_bridge.h"
 #include "uci.h"
 
 int main(int argc, char* argv[]) {
@@ -10,6 +11,11 @@ int main(int argc, char* argv[]) {
     Voraxis::Movegen::initAttackTables();
     Voraxis::Board::initZobrist();
     Voraxis::Book::init("books/komodo.bin");
+
+    // Initialize Syzygy tablebases if available
+    if (!Voraxis::Syzygy::init("books/syzygy")) {
+        Voraxis::Syzygy::init("../books/syzygy");
+    }
 
     // Check command line arguments for direct testing
     if (argc > 1) {

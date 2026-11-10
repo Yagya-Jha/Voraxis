@@ -2,6 +2,7 @@
 #include <iostream>
 #include "board.h"
 #include "evaluate.h"
+#include "syzygy_bridge.h"
 #include <algorithm>
 #include <chrono>
 #include <cstring>
@@ -86,6 +87,17 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     std::vector<Move> legalMoves = returnSortedMoves(board, 1);
     if (legalMoves.empty()) {
         return Move();
+    }
+
+    // Syzygy tablebase DTZ probe at root
+    if (Syzygy::isLoaded()) {
+        Move tbMove;
+        int tbScore = 0;
+        if (Syzygy::probeRoot(board, tbMove, tbScore)) {
+            std::cout << "info depth 1 score cp " << tbScore << " nodes 1 time 0 pv " << tbMove.toUCI() << "\n";
+            std::cout.flush();
+            return tbMove;
+        }
     }
 
     Move bestMove = legalMoves[0];
@@ -283,6 +295,40 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
             }
             if (entry->flag == TT_UPPERBOUND && ttScore <= alpha) {
                 return ttScore;
+            }
+        }
+    }
+
+    // Syzygy WDL Probe during search (instant game-theoretic cutoff)
+    if (ply > 0 && Syzygy::isLoaded()) {
+        uint64_t occAll = board.occBB[WHITE] | board.occBB[BLACK];
+        int pieceCount = __builtin_popcountll(occAll);
+        if (pieceCount <= Syzygy::getMaxPieces() && board.castlingRights == NO_CASTLING) {
+            Syzygy::WDLResult wdl = Syzygy::probeWDL(board);
+            if (wdl != Syzygy::WDL_FAILED) {
+                int tbScore = 0;
+                if (wdl == Syzygy::WDL_WIN) {
+                    tbScore = MATE_THRESHOLD - 1000 - ply;
+                } else if (wdl == Syzygy::WDL_LOSS) {
+                    tbScore = -(MATE_THRESHOLD - 1000) + ply;
+                } else if (wdl == Syzygy::WDL_CURSED_WIN) {
+                    tbScore = 1;
+                } else if (wdl == Syzygy::WDL_BLESSED_LOSS) {
+                    tbScore = -1;
+                } else {
+                    tbScore = 0;
+                }
+
+                if (tbScore >= beta) {
+                    storeTT(board.zobristKey, depth, beta, TT_LOWERBOUND, Move(), ply);
+                    return beta;
+                }
+                if (tbScore <= alpha) {
+                    storeTT(board.zobristKey, depth, alpha, TT_UPPERBOUND, Move(), ply);
+                    return alpha;
+                }
+                storeTT(board.zobristKey, depth, tbScore, TT_EXACT, Move(), ply);
+                return tbScore;
             }
         }
     }

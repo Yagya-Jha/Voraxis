@@ -181,10 +181,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 7. ENDGAME TABLEBASES
 ================================================================================
 
-[ ] 7.1 Syzygy Tablebase Probing
-    - Fathom / Syzygy WDL (Win/Draw/Loss) probing during search.
-    - DTZ (Distance To Zero) probing at root.
-    - UCI "SyzygyPath" option support.
+[x] 7.1 Syzygy Tablebase Probing (COMPLETED)
+    [x] Fathom / Syzygy WDL (Win/Draw/Loss) probing during search.
+    [x] DTZ (Distance To Zero) probing at root.
+    [x] UCI "SyzygyPath" option support.
 
 ================================================================================
 8. DRAW AND TERMINAL POSITION HANDLING

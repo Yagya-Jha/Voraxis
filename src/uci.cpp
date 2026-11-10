@@ -2,6 +2,7 @@
 #include "movegen.h"
 #include "search.h"
 #include "book.h"
+#include "syzygy_bridge.h"
 #include <iostream>
 #include <sstream>
 #include <chrono>
@@ -55,8 +56,27 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
     if (command == "uci") {
         std::cout << "id name Voraxis 1.0\n";
         std::cout << "id author Voraxis Team\n";
+        std::cout << "option name SyzygyPath type string default <empty>\n";
         std::cout << "uciok\n";
         std::cout.flush();
+    } else if (command == "setoption") {
+        std::string word, optName, optValue;
+        while (iss >> word) {
+            if (word == "name") {
+                iss >> optName;
+            } else if (word == "value") {
+                std::getline(iss, optValue);
+                size_t first = optValue.find_first_not_of(" \t\r\n");
+                if (first != std::string::npos) {
+                    optValue = optValue.substr(first);
+                } else {
+                    optValue = "";
+                }
+            }
+        }
+        if (optName == "SyzygyPath") {
+            Syzygy::init(optValue);
+        }
     } else if (command == "isready") {
         std::cout << "readyok\n";
         std::cout.flush();

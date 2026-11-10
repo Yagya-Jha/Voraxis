@@ -11,3 +11,8 @@
 *.ilk
 __pycache__/
 *.pyc
+
+# Tablebases
+books/syzygy/
+*.rtbw
+*.rtbz
