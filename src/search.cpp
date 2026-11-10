@@ -239,6 +239,153 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     return bestMove;
 }
 
+bool isPseudoLegal(const Board& b, const Move& m) {
+    if (m.from < 0 || m.from > 63 || m.to < 0 || m.to > 63) return false;
+    int p = b.pieceOnSq[m.from];
+    if (p == NO_PIECE || pieceColor(p) != b.getSideToMove()) return false;
+    if (m.piece != p) return false;
+    int cap = b.pieceOnSq[m.to];
+    if (cap != NO_PIECE && pieceColor(cap) == b.getSideToMove()) return false;
+
+    int pt = pieceType(p);
+    int side = b.getSideToMove();
+    uint64_t occ = b.occBB[BOTH];
+
+    switch (pt) {
+        case PAWN: {
+            int dir = (side == WHITE) ? 8 : -8;
+            int startRank = (side == WHITE) ? 1 : 6;
+            int rFrom = squareRank(m.from);
+            int rTo = squareRank(m.to);
+            int fFrom = squareFile(m.from);
+            int fTo = squareFile(m.to);
+            if (fFrom == fTo) {
+                if (m.to == m.from + dir && b.pieceOnSq[m.to] == NO_PIECE) return true;
+                if (rFrom == startRank && m.to == m.from + 2 * dir &&
+                    b.pieceOnSq[m.from + dir] == NO_PIECE && b.pieceOnSq[m.to] == NO_PIECE) return true;
+            } else if (std::abs(fFrom - fTo) == 1 && rTo == rFrom + (side == WHITE ? 1 : -1)) {
+                if (cap != NO_PIECE && pieceColor(cap) != side) return true;
+                if (m.to == b.epSquare) return true;
+            }
+            return false;
+        }
+        case KNIGHT:
+            return (Movegen::getKnightAttacks(m.from) & (1ULL << m.to)) != 0;
+        case BISHOP:
+            return (Movegen::getBishopAttacks(m.from, occ) & (1ULL << m.to)) != 0;
+        case ROOK:
+            return (Movegen::getRookAttacks(m.from, occ) & (1ULL << m.to)) != 0;
+        case QUEEN:
+            return (Movegen::getQueenAttacks(m.from, occ) & (1ULL << m.to)) != 0;
+        case KING:
+            if (Movegen::getKingAttacks(m.from) & (1ULL << m.to)) return true;
+            if (m.isCastling) return true;
+            return false;
+        default:
+            return false;
+    }
+}
+
+bool isLegalMove(Board& b, const Move& m) {
+    if (!isPseudoLegal(b, m)) return false;
+    int side = b.getSideToMove();
+    b.applyMove(m);
+    bool legal = !Movegen::inCheck(b, side);
+    b.undoMove(m);
+    return legal;
+}
+
+class MovePicker {
+public:
+    enum Stage {
+        STAGE_TT = 0,
+        STAGE_GEN_CAPTURES,
+        STAGE_CAPTURES,
+        STAGE_GEN_QUIETS,
+        STAGE_QUIETS,
+        STAGE_DONE
+    };
+
+    Board& board;
+    int ply;
+    Move ttMove;
+    Move prevMove;
+    bool inCheck;
+    Stage stage;
+    std::vector<Move> moves;
+    size_t moveIndex;
+
+    MovePicker(Board& b, int p, const Move& tt, const Move& prev, bool check)
+        : board(b), ply(p), ttMove(tt), prevMove(prev), inCheck(check), moveIndex(0) {
+        if (inCheck) {
+            stage = STAGE_GEN_QUIETS;
+            moves = Movegen::generateLegalMoves(board, Movegen::GEN_ALL);
+            std::sort(moves.begin(), moves.end(), [this](const Move& m1, const Move& m2) {
+                return scoreMove(board, m1, ply, ttMove, prevMove) > scoreMove(board, m2, ply, ttMove, prevMove);
+            });
+            stage = STAGE_QUIETS;
+        } else {
+            stage = STAGE_TT;
+        }
+    }
+
+    bool next(Move& move) {
+        while (stage != STAGE_DONE) {
+            switch (stage) {
+                case STAGE_TT: {
+                    stage = STAGE_GEN_CAPTURES;
+                    if (ttMove.from != SQ_NONE && isLegalMove(board, ttMove)) {
+                        move = ttMove;
+                        return true;
+                    }
+                    break;
+                }
+                case STAGE_GEN_CAPTURES: {
+                    moves = Movegen::generateLegalMoves(board, Movegen::GEN_CAPTURES);
+                    std::sort(moves.begin(), moves.end(), [this](const Move& m1, const Move& m2) {
+                        return scoreMove(board, m1, ply, ttMove, prevMove) > scoreMove(board, m2, ply, ttMove, prevMove);
+                    });
+                    moveIndex = 0;
+                    stage = STAGE_CAPTURES;
+                    break;
+                }
+                case STAGE_CAPTURES: {
+                    while (moveIndex < moves.size()) {
+                        Move candidate = moves[moveIndex++];
+                        if (candidate == ttMove) continue;
+                        move = candidate;
+                        return true;
+                    }
+                    stage = STAGE_GEN_QUIETS;
+                    break;
+                }
+                case STAGE_GEN_QUIETS: {
+                    moves = Movegen::generateLegalMoves(board, Movegen::GEN_QUIETS);
+                    std::sort(moves.begin(), moves.end(), [this](const Move& m1, const Move& m2) {
+                        return scoreMove(board, m1, ply, ttMove, prevMove) > scoreMove(board, m2, ply, ttMove, prevMove);
+                    });
+                    moveIndex = 0;
+                    stage = STAGE_QUIETS;
+                    break;
+                }
+                case STAGE_QUIETS: {
+                    while (moveIndex < moves.size()) {
+                        Move candidate = moves[moveIndex++];
+                        if (candidate == ttMove) continue;
+                        move = candidate;
+                        return true;
+                    }
+                    stage = STAGE_DONE;
+                    break;
+                }
+                case STAGE_DONE:
+                    return false;
+            }
+        }
+        return false;
+    }
+};
+
 std::vector<Move> returnSortedMoves(Board& board, int ply, const Move& prevMove) {
     std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
     Move ttMove;
@@ -276,19 +423,24 @@ int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, in
         }
     }
 
-    std::vector<Move> legalMoves = returnSortedMoves(board, ply);
+    std::vector<Move> legalMoves;
+    if (inCheck) {
+        legalMoves = returnSortedMoves(board, ply);
+    } else {
+        legalMoves = Movegen::generateLegalMoves(board, Movegen::GEN_CAPTURES);
+        std::sort(legalMoves.begin(), legalMoves.end(), [&board, ply](const Move& a, const Move& b) {
+            return scoreMove(board, a, ply, Move(), Move()) > scoreMove(board, b, ply, Move(), Move());
+        });
+    }
+
     if (legalMoves.empty()) {
         if (inCheck) {
             return -MATE_SCORE + ply;
         }
-        return 0;
+        return alpha;
     }
 
     for (const Move& move : legalMoves) {
-        if (!inCheck && move.captured == NO_PIECE && move.promotion == NO_PIECE && !move.isEnPassant) {
-            continue;
-        }
-
         // SEE Pruning in Quiescence Search: prune losing captures (SEE < 0) when not in check
         if (!inCheck && (move.captured != NO_PIECE || move.isEnPassant)) {
             if (!SEE::hasPositiveSEE(board, move, 0)) {
@@ -515,21 +667,13 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
     }
 
-    std::vector<Move> legalMoves = returnSortedMoves(board, ply, prevMove);
-
-    if (legalMoves.empty()) {
-        if (inCheck) {
-            return -MATE_SCORE + ply;
-        } else {
-            return 0;
-        }
-    }
-
     int originalAlpha = alpha;
     Move bestMove;
     int movesSearched = 0;
+    Move move;
+    MovePicker picker(board, ply, ttMove, prevMove, inCheck);
 
-    for (Move move : legalMoves) {
+    while (picker.next(move)) {
         if (move == excludedMove) {
             continue;
         }
@@ -614,8 +758,15 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
     }
 
-    if (excludedMove.from != SQ_NONE && movesSearched == 0) {
-        return alpha;
+    if (movesSearched == 0) {
+        if (excludedMove.from != SQ_NONE) {
+            return alpha;
+        }
+        if (inCheck) {
+            return -MATE_SCORE + ply;
+        } else {
+            return 0;
+        }
     }
 
     if (excludedMove.from == SQ_NONE) {

@@ -221,10 +221,14 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 [x] 10.1 Core Representation (COMPLETED)
     [x] Bitboards for board & attack representation.
     [x] Make/undo move.
-[ ] 10.2 Magic Bitboards (Optional Slider Speedup)
-    - Precomputed magic bitboards for sliding rooks and bishops instead of ray iterations.
-[ ] 10.3 Move Generation Staging
-    - Generate captures first during search, only generate quiet moves if needed.
+[x] 10.2 Magic Bitboards (COMPLETED)
+    [x] Precomputed collision-free magic bitboards for sliding rooks and bishops.
+    [x] Constant O(1) slider attack lookups replacing ray-casting loops.
+[x] 10.3 Move Generation Staging (COMPLETED)
+    [x] TT Move played first before movegen.
+    [x] Captures & promotions generated and searched first.
+    [x] Quiet moves only generated if no beta cutoff from captures.
+    [x] Quiescence search restricted strictly to tactical captures/promotions.
 
 ================================================================================
 11. MULTITHREADING (LAZY SMP)

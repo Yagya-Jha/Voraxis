@@ -19,7 +19,13 @@ uint64_t getQueenAttacks(int sq, uint64_t occ);
 bool isSquareAttacked(const Board& board, int sq, int attackerColor);
 bool inCheck(const Board& board, int color);
 
-std::vector<Move> generateLegalMoves(Board& board);
+enum MoveGenType {
+    GEN_ALL = 0,
+    GEN_CAPTURES = 1,
+    GEN_QUIETS = 2
+};
+
+std::vector<Move> generateLegalMoves(Board& board, MoveGenType type = GEN_ALL);
 
 bool isCheckmate(Board& board);
 bool isStalemate(Board& board);

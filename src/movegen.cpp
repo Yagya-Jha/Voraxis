@@ -1,4 +1,5 @@
 #include "movegen.h"
+#include "magic.h"
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -57,6 +58,7 @@ void initAttackTables() {
         }
     }
 
+    Magic::initMagicTables();
     tablesInitialized = true;
 }
 
@@ -76,51 +78,15 @@ uint64_t getKingAttacks(int sq) {
 }
 
 uint64_t getBishopAttacks(int sq, uint64_t occ) {
-    uint64_t attacks = 0ULL;
-    int f = squareFile(sq);
-    int r = squareRank(sq);
-
-    const int df[4] = {1, -1, 1, -1};
-    const int dr[4] = {1, 1, -1, -1};
-
-    for (int i = 0; i < 4; ++i) {
-        int curF = f + df[i];
-        int curR = r + dr[i];
-        while (curF >= 0 && curF <= 7 && curR >= 0 && curR <= 7) {
-            int toSq = makeSquare(curF, curR);
-            attacks |= (1ULL << toSq);
-            if (occ & (1ULL << toSq)) break;
-            curF += df[i];
-            curR += dr[i];
-        }
-    }
-    return attacks;
+    return Magic::getBishopAttacks(sq, occ);
 }
 
 uint64_t getRookAttacks(int sq, uint64_t occ) {
-    uint64_t attacks = 0ULL;
-    int f = squareFile(sq);
-    int r = squareRank(sq);
-
-    const int df[4] = {0, 0, 1, -1};
-    const int dr[4] = {1, -1, 0, 0};
-
-    for (int i = 0; i < 4; ++i) {
-        int curF = f + df[i];
-        int curR = r + dr[i];
-        while (curF >= 0 && curF <= 7 && curR >= 0 && curR <= 7) {
-            int toSq = makeSquare(curF, curR);
-            attacks |= (1ULL << toSq);
-            if (occ & (1ULL << toSq)) break;
-            curF += df[i];
-            curR += dr[i];
-        }
-    }
-    return attacks;
+    return Magic::getRookAttacks(sq, occ);
 }
 
 uint64_t getQueenAttacks(int sq, uint64_t occ) {
-    return getBishopAttacks(sq, occ) | getRookAttacks(sq, occ);
+    return Magic::getQueenAttacks(sq, occ);
 }
 
 bool isSquareAttacked(const Board& board, int sq, int attackerColor) {
@@ -146,13 +112,24 @@ bool inCheck(const Board& board, int color) {
     return isSquareAttacked(board, kingSq, color ^ 1);
 }
 
-std::vector<Move> generateLegalMoves(Board& board) {
+std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
     initAttackTables();
     std::vector<Move> pseudoMoves;
-    pseudoMoves.reserve(64);
+    pseudoMoves.reserve(type == GEN_CAPTURES ? 16 : 64);
 
     int side = board.sideToMove;
     int enemyColor = side ^ 1;
+    bool genCaptures = (type == GEN_ALL || type == GEN_CAPTURES);
+    bool genQuiets = (type == GEN_ALL || type == GEN_QUIETS);
+
+    uint64_t targetMask = 0ULL;
+    if (genCaptures && genQuiets) {
+        targetMask = ~board.occBB[side];
+    } else if (genCaptures) {
+        targetMask = board.occBB[enemyColor];
+    } else {
+        targetMask = ~board.occBB[BOTH];
+    }
 
     // 1. Pawn Moves
     if (side == WHITE) {
@@ -164,15 +141,17 @@ std::vector<Move> generateLegalMoves(Board& board) {
             int f = squareFile(sq);
             int r = squareRank(sq);
 
-            // Single push
+            // Single push & Promotions
             int singleSq = sq + 8;
             if (board.pieceOnSq[singleSq] == NO_PIECE) {
-                if (r == 6) { // Promotion
-                    pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_QUEEN);
-                    pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_ROOK);
-                    pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_BISHOP);
-                    pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_KNIGHT);
-                } else {
+                if (r == 6) { // Promotion is tactical (included in captures)
+                    if (genCaptures) {
+                        pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_QUEEN);
+                        pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_ROOK);
+                        pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_BISHOP);
+                        pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_KNIGHT);
+                    }
+                } else if (genQuiets) {
                     pseudoMoves.emplace_back(sq, singleSq, W_PAWN);
                     // Double push
                     if (r == 1) {
@@ -185,37 +164,39 @@ std::vector<Move> generateLegalMoves(Board& board) {
             }
 
             // Captures
-            if (f > 0) {
-                int capSq = sq + 7;
-                int capPiece = board.pieceOnSq[capSq];
-                if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
-                    if (r == 6) {
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_QUEEN);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_ROOK);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_BISHOP);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_KNIGHT);
-                    } else {
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece);
+            if (genCaptures) {
+                if (f > 0) {
+                    int capSq = sq + 7;
+                    int capPiece = board.pieceOnSq[capSq];
+                    if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
+                        if (r == 6) {
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_QUEEN);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_ROOK);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_BISHOP);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_KNIGHT);
+                        } else {
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece);
+                        }
+                    } else if (capSq == board.epSquare) {
+                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, B_PAWN, NO_PIECE, false, true, false);
                     }
-                } else if (capSq == board.epSquare) {
-                    pseudoMoves.emplace_back(sq, capSq, W_PAWN, B_PAWN, NO_PIECE, false, true, false);
                 }
-            }
 
-            if (f < 7) {
-                int capSq = sq + 9;
-                int capPiece = board.pieceOnSq[capSq];
-                if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
-                    if (r == 6) {
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_QUEEN);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_ROOK);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_BISHOP);
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_KNIGHT);
-                    } else {
-                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece);
+                if (f < 7) {
+                    int capSq = sq + 9;
+                    int capPiece = board.pieceOnSq[capSq];
+                    if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
+                        if (r == 6) {
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_QUEEN);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_ROOK);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_BISHOP);
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece, W_KNIGHT);
+                        } else {
+                            pseudoMoves.emplace_back(sq, capSq, W_PAWN, capPiece);
+                        }
+                    } else if (capSq == board.epSquare) {
+                        pseudoMoves.emplace_back(sq, capSq, W_PAWN, B_PAWN, NO_PIECE, false, true, false);
                     }
-                } else if (capSq == board.epSquare) {
-                    pseudoMoves.emplace_back(sq, capSq, W_PAWN, B_PAWN, NO_PIECE, false, true, false);
                 }
             }
         }
@@ -228,15 +209,17 @@ std::vector<Move> generateLegalMoves(Board& board) {
             int f = squareFile(sq);
             int r = squareRank(sq);
 
-            // Single push
+            // Single push & Promotions
             int singleSq = sq - 8;
             if (board.pieceOnSq[singleSq] == NO_PIECE) {
-                if (r == 1) { // Promotion
-                    pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_QUEEN);
-                    pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_ROOK);
-                    pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_BISHOP);
-                    pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_KNIGHT);
-                } else {
+                if (r == 1) { // Promotion is tactical (included in captures)
+                    if (genCaptures) {
+                        pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_QUEEN);
+                        pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_ROOK);
+                        pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_BISHOP);
+                        pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_KNIGHT);
+                    }
+                } else if (genQuiets) {
                     pseudoMoves.emplace_back(sq, singleSq, B_PAWN);
                     // Double push
                     if (r == 6) {
@@ -249,37 +232,39 @@ std::vector<Move> generateLegalMoves(Board& board) {
             }
 
             // Captures
-            if (f > 0) {
-                int capSq = sq - 9;
-                int capPiece = board.pieceOnSq[capSq];
-                if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
-                    if (r == 1) {
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_QUEEN);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_ROOK);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_BISHOP);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_KNIGHT);
-                    } else {
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece);
+            if (genCaptures) {
+                if (f > 0) {
+                    int capSq = sq - 9;
+                    int capPiece = board.pieceOnSq[capSq];
+                    if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
+                        if (r == 1) {
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_QUEEN);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_ROOK);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_BISHOP);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_KNIGHT);
+                        } else {
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece);
+                        }
+                    } else if (capSq == board.epSquare) {
+                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, W_PAWN, NO_PIECE, false, true, false);
                     }
-                } else if (capSq == board.epSquare) {
-                    pseudoMoves.emplace_back(sq, capSq, B_PAWN, W_PAWN, NO_PIECE, false, true, false);
                 }
-            }
 
-            if (f < 7) {
-                int capSq = sq - 7;
-                int capPiece = board.pieceOnSq[capSq];
-                if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
-                    if (r == 1) {
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_QUEEN);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_ROOK);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_BISHOP);
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_KNIGHT);
-                    } else {
-                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece);
+                if (f < 7) {
+                    int capSq = sq - 7;
+                    int capPiece = board.pieceOnSq[capSq];
+                    if (capPiece != NO_PIECE && pieceColor(capPiece) == enemyColor) {
+                        if (r == 1) {
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_QUEEN);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_ROOK);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_BISHOP);
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece, B_KNIGHT);
+                        } else {
+                            pseudoMoves.emplace_back(sq, capSq, B_PAWN, capPiece);
+                        }
+                    } else if (capSq == board.epSquare) {
+                        pseudoMoves.emplace_back(sq, capSq, B_PAWN, W_PAWN, NO_PIECE, false, true, false);
                     }
-                } else if (capSq == board.epSquare) {
-                    pseudoMoves.emplace_back(sq, capSq, B_PAWN, W_PAWN, NO_PIECE, false, true, false);
                 }
             }
         }
@@ -291,7 +276,7 @@ std::vector<Move> generateLegalMoves(Board& board) {
     while (knights) {
         int sq = __builtin_ctzll(knights);
         knights &= knights - 1;
-        uint64_t targets = knightAttacks[sq] & ~board.occBB[side];
+        uint64_t targets = knightAttacks[sq] & targetMask;
         while (targets) {
             int toSq = __builtin_ctzll(targets);
             targets &= targets - 1;
@@ -306,7 +291,7 @@ std::vector<Move> generateLegalMoves(Board& board) {
     while (bishops) {
         int sq = __builtin_ctzll(bishops);
         bishops &= bishops - 1;
-        uint64_t targets = getBishopAttacks(sq, board.occBB[BOTH]) & ~board.occBB[side];
+        uint64_t targets = getBishopAttacks(sq, board.occBB[BOTH]) & targetMask;
         while (targets) {
             int toSq = __builtin_ctzll(targets);
             targets &= targets - 1;
@@ -321,7 +306,7 @@ std::vector<Move> generateLegalMoves(Board& board) {
     while (rooks) {
         int sq = __builtin_ctzll(rooks);
         rooks &= rooks - 1;
-        uint64_t targets = getRookAttacks(sq, board.occBB[BOTH]) & ~board.occBB[side];
+        uint64_t targets = getRookAttacks(sq, board.occBB[BOTH]) & targetMask;
         while (targets) {
             int toSq = __builtin_ctzll(targets);
             targets &= targets - 1;
@@ -336,7 +321,7 @@ std::vector<Move> generateLegalMoves(Board& board) {
     while (queens) {
         int sq = __builtin_ctzll(queens);
         queens &= queens - 1;
-        uint64_t targets = getQueenAttacks(sq, board.occBB[BOTH]) & ~board.occBB[side];
+        uint64_t targets = getQueenAttacks(sq, board.occBB[BOTH]) & targetMask;
         while (targets) {
             int toSq = __builtin_ctzll(targets);
             targets &= targets - 1;
@@ -349,7 +334,7 @@ std::vector<Move> generateLegalMoves(Board& board) {
     int kingPiece = (side == WHITE) ? W_KING : B_KING;
     int kingSq = board.getKingSquare(side);
     if (kingSq != SQ_NONE) {
-        uint64_t targets = kingAttacks[kingSq] & ~board.occBB[side];
+        uint64_t targets = kingAttacks[kingSq] & targetMask;
         while (targets) {
             int toSq = __builtin_ctzll(targets);
             targets &= targets - 1;
@@ -357,8 +342,8 @@ std::vector<Move> generateLegalMoves(Board& board) {
             pseudoMoves.emplace_back(kingSq, toSq, kingPiece, cap);
         }
 
-        // Castling moves
-        if (!inCheck(board, side)) {
+        // Castling moves (quiet only)
+        if (genQuiets && !inCheck(board, side)) {
             if (side == WHITE) {
                 // White Kingside: e1 -> g1
                 if ((board.castlingRights & WHITE_OO) &&
