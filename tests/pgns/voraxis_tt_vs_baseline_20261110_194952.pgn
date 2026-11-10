@@ -1,0 +1,124 @@
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "1"]
+[White "Voraxis_TT"]
+[Black "Voraxis_Baseline"]
+[Result "1-0"]
+[ECO "A05"]
+[GameDuration "00:00:20"]
+[GameEndTime "2026-11-10T19:50:13.755 India Standard Time"]
+[GameStartTime "2026-11-10T19:49:52.865 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "143"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 d5 4. exd5 Nxd5 5. Nxd5 Qxd5 6. d4 Bg4 7. Be2 e5
+8. dxe5 Bxf3 9. Bxf3 Qxe5+ 10. Kf1 Bc5 11. Bxc6+ bxc6 12. Rb1 Qf5 13. Qe2+ Kf8
+14. Kg1 Qd5 15. Ra1 Bd4 16. Qd3 Rd8 17. Qb3 Qxb3 18. axb3 Re8 19. Be3 Bxe3
+20. fxe3 Rxe3 21. Kf2 Re7 22. Rxa7 c5 23. Re1 Rxe1 24. Kxe1 Ke7 25. Rxc7+ Ke6
+26. Rxc5 Re8 27. b4 Kd6+ 28. Kf2 Rb8 29. Rc4 Ke7 30. Ke1 Kf8 31. Kd2 Rd8+
+32. Kc3 Rb8 33. Rc7 h6 34. Kc4 Re8 35. b5 Re2 36. Rc8+ Ke7 37. Rc7+ Ke6 38. b6
+Rxc2+ 39. Kb3 Rxc7 40. bxc7 Kd7 41. c8=Q+ Kxc8 42. Kc3 Kb7 43. h3 Ka6 44. Kc2
+Ka5 45. Kb1 Ka4 46. Kc2 Kb4 47. Kb1 Kb3 48. h4 Ka4 49. h5 Kb3 50. Kc1 f5 51. Kd2
+Kxb2 52. Ke3 Kc1 53. Kf4 Kd2 54. Kxf5 Ke3 55. Kg6 Kf4 56. Kxg7 Kg5 57. g4 Kxg4
+58. Kxh6 Kf3 59. Kg6 Ke2 60. h6 Kd1 61. h7 Kc1 62. h8=Q Kb1 63. Kg7 Ka1 64. Kg6+
+Kb1 65. Kg7 Ka1 66. Qd8 Kb1 67. Qb8+ Ka1 68. Kf6 Ka2 69. Ke5 Ka1 70. Kd4 Ka2
+71. Kc3 Ka1 72. Qb2# {White mates} 1-0
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "2"]
+[White "Voraxis_Baseline"]
+[Black "Voraxis_TT"]
+[Result "0-1"]
+[ECO "A05"]
+[GameDuration "00:00:13"]
+[GameEndTime "2026-11-10T19:50:06.693 India Standard Time"]
+[GameStartTime "2026-11-10T19:49:52.913 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "82"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 d5 4. exd5 Nxd5 5. Nxd5 Qxd5 6. d4 Bg4 7. Be2 e5
+8. dxe5 Bxf3 9. Bxf3 Qxe5+ 10. Kf1 Bc5 11. Bxc6+ bxc6 12. Qf3 O-O-O 13. h3 Rhe8
+14. Qg4+ f5 15. Bf4 fxg4 16. Bxe5 Rxe5 17. hxg4 Rd2 18. Rxh7 Rxf2+ 19. Kg1 Ree2
+20. Kh1 Rxg2 21. Rc1 Rxc2 22. Rxc2 Rxc2 23. Rxg7 Rxb2 24. Rg5 Bb6 25. a4 Ra2
+26. Rg8+ Kb7 27. Rg7 c5 28. a5 Bxa5 29. g5 c4 30. g6 c3 31. Rf7 c2 32. Rf1 Bc3
+33. g7 Bxg7 34. Re1 Ra1 35. Rxa1 Bxa1 36. Kg1 Bd4+ 37. Kf1 c1=Q+ 38. Ke2 Qc3
+39. Kd1 Qb2 40. Ke1 Qc2 41. Kf1 Qf2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "3"]
+[White "Voraxis_TT"]
+[Black "Voraxis_Baseline"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:20"]
+[GameEndTime "2026-11-10T19:50:27.346 India Standard Time"]
+[GameStartTime "2026-11-10T19:50:06.697 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "140"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 d5 4. exd5 Nxd5 5. Nxd5 Qxd5 6. d4 Bg4 7. Be2 e5
+8. dxe5 Bxf3 9. Bxf3 Qxe5+ 10. Kf1 Bc5 11. Bxc6+ bxc6 12. Rb1 Qf5 13. Qe2+ Kf8
+14. Kg1 Qd5 15. Ra1 Bd4 16. Qd3 Rd8 17. Qb3 Qxb3 18. axb3 Re8 19. Be3 Bxe3
+20. fxe3 Rxe3 21. Kf2 Re7 22. Rxa7 c5 23. Re1 Rxe1 24. Kxe1 Ke7 25. Rxc7+ Ke6
+26. Rxc5 Re8 27. b4 Kd6+ 28. Kf2 Rb8 29. Rc4 Ke7 30. Ke1 Kf8 31. Kd2 Rd8+
+32. Kc3 Rb8 33. Rc7 h6 34. Kc4 Re8 35. b5 Re2 36. Rc8+ Ke7 37. Rc7+ Ke6 38. b6
+Rxc2+ 39. Kb3 Rxc7 40. bxc7 Kd7 41. c8=Q+ Kxc8 42. Kc2 Kb7 43. h3 Ka6 44. Kb1
+Ka5 45. Ka1 Ka4 46. Kb1 Kb3 47. Kc1 f5 48. Kb1 f4 49. Kc1 h5 50. h4 Ka4 51. Kd2
+Kb3 52. Ke2 Kxb2 53. Kf3 Kc1 54. Kxf4 Kd1 55. Kg5 Ke1 56. Kxh5 Kf1 57. Kg6 Kxg2
+58. h5 Kf1 59. Kxg7 Ke1 60. h6 Kd1 61. h7 Kc1 62. h8=Q Kb1 63. Kg6 Kc1 64. Kg7
+Kb1 65. Kg6 Kc1 66. Qa8 Kb1 67. Qd8 Ka1 68. Qa8+ Kb1 69. Qd8 Ka1 70. Qa8+
+Kb1 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "4"]
+[White "Voraxis_Baseline"]
+[Black "Voraxis_TT"]
+[Result "0-1"]
+[ECO "A05"]
+[GameDuration "00:00:13"]
+[GameEndTime "2026-11-10T19:50:27.500 India Standard Time"]
+[GameStartTime "2026-11-10T19:50:13.755 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "82"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 d5 4. exd5 Nxd5 5. Nxd5 Qxd5 6. d4 Bg4 7. Be2 e5
+8. dxe5 Bxf3 9. Bxf3 Qxe5+ 10. Kf1 Bc5 11. Bxc6+ bxc6 12. Qf3 O-O-O 13. h3 Rhe8
+14. Qg4+ f5 15. Bf4 fxg4 16. Bxe5 Rxe5 17. hxg4 Rd2 18. Rxh7 Rxf2+ 19. Kg1 Ree2
+20. Kh1 Rxg2 21. Rc1 Rxc2 22. Rxc2 Rxc2 23. Rxg7 Rxb2 24. Rg5 Bb6 25. a4 Ra2
+26. Rg8+ Kb7 27. Rg7 c5 28. a5 Bxa5 29. g5 c4 30. g6 c3 31. Rf7 c2 32. Rf1 Bc3
+33. g7 Bxg7 34. Re1 Ra1 35. Rxa1 Bxa1 36. Kg1 Bd4+ 37. Kf1 c1=Q+ 38. Ke2 Qc3
+39. Kd1 Qb2 40. Ke1 Qc2 41. Kf1 Qf2# {Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "5"]
+[White "Voraxis_TT"]
+[Black "Voraxis_Baseline"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:11"]
+[GameEndTime "2026-11-10T19:50:39.233 India Standard Time"]
+[GameStartTime "2026-11-10T19:50:27.346 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "68"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 d5 4. exd5 Nxd5 5. Nxd5 Qxd5 6. d4 Bg4 7. Be2 e5
+8. dxe5 Bxf3 9. Bxf3 Qxe5+ 10. Kf1 Bc5 11. Bxc6+ bxc6 12. Qf3 O-O-O 13. Qh3+ Rd7
+14. Qf3 Re8 15. g4 Qd5 16. Qxd5 cxd5 17. Bg5 h6 18. Bd2 Rde7 19. Re1 Rxe1+
+20. Bxe1 Bd4 21. Bc3 Bxc3 22. bxc3 Re4 23. g5 hxg5 24. Kg2 Rg4+ 25. Kf1 Ra4
+26. Rg1 f6 27. Ke1 Rxa2 28. Kd2 Ra4 29. h3 Kd7 30. Rg3 Rf4 31. Ke2 Re4+ 32. Kd2
+Rf4 33. Ke2 Re4+ 34. Kd2 Rf4 {Draw by 3-fold repetition} 1/2-1/2
+
