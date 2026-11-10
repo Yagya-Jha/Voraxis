@@ -598,6 +598,247 @@ void evaluatePieceActivity(const Board& board, int& mgScore, int& egScore) {
     }
 }
 
+// 4.5 King Danger Non-Linear Table (derived from attack unit weights)
+static const int kingDangerTable[100] = {
+      0,   0,   2,   5,   8,  12,  16,  20,  25,  30,
+     36,  42,  48,  55,  62,  70,  78,  86,  95, 104,
+    114, 124, 134, 145, 156, 168, 180, 192, 205, 218,
+    232, 246, 260, 275, 290, 305, 321, 337, 354, 371,
+    388, 406, 424, 442, 461, 480, 500, 520, 540, 560,
+    580, 600, 620, 640, 660, 680, 700, 720, 740, 760,
+    780, 800, 820, 840, 860, 880, 900, 920, 940, 960,
+    980, 1000, 1020, 1040, 1060, 1080, 1100, 1120, 1140, 1160,
+    1180, 1200, 1220, 1240, 1260, 1280, 1300, 1320, 1340, 1360,
+    1380, 1400, 1420, 1440, 1460, 1480, 1500, 1520, 1540, 1560
+};
+
+// 4.5 King Safety Evaluation: Pawn Shelter, Open/Semi-Open Files, and Virtual Attackers
+void evaluateKingSafety(const Board& board, int& mgScore, int& egScore) {
+    uint64_t wPawns = board.pieceBB[W_PAWN];
+    uint64_t bPawns = board.pieceBB[B_PAWN];
+    uint64_t occAll = board.occBB[WHITE] | board.occBB[BLACK];
+
+    // ========================================================================
+    // White King Safety
+    // ========================================================================
+    if (board.pieceBB[W_KING]) {
+        int wKingSq = __builtin_ctzll(board.pieceBB[W_KING]);
+        int kFile = wKingSq % 8;
+        int kRank = wKingSq / 8;
+
+        // 1. Pawn Shelter Shield (applicable when king is on ranks 1-3)
+        if (kRank <= 2) {
+            int minF = std::max(0, kFile - 1);
+            int maxF = std::min(7, kFile + 1);
+            for (int f = minF; f <= maxF; ++f) {
+                uint64_t filePawns = wPawns & fileMask[f];
+                if (!filePawns) {
+                    mgScore -= 35; // Missing pawn shelter
+                } else {
+                    int pRank = __builtin_ctzll(filePawns) / 8;
+                    if (pRank == 1) {
+                        // Unmoved shelter on rank 2: no penalty
+                    } else if (pRank == 2) {
+                        mgScore -= 10; // Advanced 1 square (rank 3)
+                    } else if (pRank == 3) {
+                        mgScore -= 22; // Advanced to rank 4
+                    } else {
+                        mgScore -= 35; // Far advanced, no cover
+                    }
+                }
+
+                // 2. Open / Semi-open files towards king
+                if ((wPawns & fileMask[f]) == 0) {
+                    if ((bPawns & fileMask[f]) == 0) {
+                        // Open file directly pointing at king
+                        mgScore -= 25;
+                        if ((board.pieceBB[B_ROOK] | board.pieceBB[B_QUEEN]) & fileMask[f]) {
+                            mgScore -= 20; // Enemy heavy piece on the file
+                        }
+                    } else {
+                        // Semi-open file towards king
+                        mgScore -= 15;
+                        if ((board.pieceBB[B_ROOK] | board.pieceBB[B_QUEEN]) & fileMask[f]) {
+                            mgScore -= 15;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Virtual Attacker Count & King Zone Danger (Middlegame)
+        uint64_t wKingZone = Movegen::getKingAttacks(wKingSq) | (1ULL << wKingSq);
+        if (kRank <= 1) {
+            wKingZone |= (wKingZone << 8); // Add forward rank
+        }
+
+        int attackerCount = 0;
+        int attackWeight = 0;
+
+        uint64_t bKnights = board.pieceBB[B_KNIGHT];
+        while (bKnights) {
+            int sq = __builtin_ctzll(bKnights);
+            bKnights &= bKnights - 1;
+            int hits = __builtin_popcountll(Movegen::getKnightAttacks(sq) & wKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 2 * hits;
+            }
+        }
+
+        uint64_t bBishops = board.pieceBB[B_BISHOP];
+        while (bBishops) {
+            int sq = __builtin_ctzll(bBishops);
+            bBishops &= bBishops - 1;
+            int hits = __builtin_popcountll(Movegen::getBishopAttacks(sq, occAll) & wKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 2 * hits;
+            }
+        }
+
+        uint64_t bRooks = board.pieceBB[B_ROOK];
+        while (bRooks) {
+            int sq = __builtin_ctzll(bRooks);
+            bRooks &= bRooks - 1;
+            int hits = __builtin_popcountll(Movegen::getRookAttacks(sq, occAll) & wKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 3 * hits;
+            }
+        }
+
+        uint64_t bQueens = board.pieceBB[B_QUEEN];
+        while (bQueens) {
+            int sq = __builtin_ctzll(bQueens);
+            bQueens &= bQueens - 1;
+            int hits = __builtin_popcountll(Movegen::getQueenAttacks(sq, occAll) & wKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 5 * hits;
+            }
+        }
+
+        if (attackerCount >= 2) {
+            int dangerIndex = std::min(99, attackWeight * 3);
+            if (!board.pieceBB[B_QUEEN]) {
+                dangerIndex /= 2; // Without an enemy queen, attacks are much less lethal
+            }
+            mgScore -= kingDangerTable[dangerIndex];
+        }
+    }
+
+    // ========================================================================
+    // Black King Safety
+    // ========================================================================
+    if (board.pieceBB[B_KING]) {
+        int bKingSq = __builtin_ctzll(board.pieceBB[B_KING]);
+        int kFile = bKingSq % 8;
+        int kRank = bKingSq / 8;
+
+        // 1. Pawn Shelter Shield (applicable when king is on ranks 6-8)
+        if (kRank >= 5) {
+            int minF = std::max(0, kFile - 1);
+            int maxF = std::min(7, kFile + 1);
+            for (int f = minF; f <= maxF; ++f) {
+                uint64_t filePawns = bPawns & fileMask[f];
+                if (!filePawns) {
+                    mgScore += 35; // Missing pawn shelter for Black
+                } else {
+                    int pRank = (63 - __builtin_clzll(filePawns)) / 8;
+                    if (pRank == 6) {
+                        // Unmoved shelter on rank 7: no penalty
+                    } else if (pRank == 5) {
+                        mgScore += 10; // Advanced 1 square (rank 6)
+                    } else if (pRank == 4) {
+                        mgScore += 22; // Advanced to rank 5
+                    } else {
+                        mgScore += 35; // Far advanced, no cover
+                    }
+                }
+
+                // 2. Open / Semi-open files towards king
+                if ((bPawns & fileMask[f]) == 0) {
+                    if ((wPawns & fileMask[f]) == 0) {
+                        // Open file directly pointing at Black king
+                        mgScore += 25;
+                        if ((board.pieceBB[W_ROOK] | board.pieceBB[W_QUEEN]) & fileMask[f]) {
+                            mgScore += 20;
+                        }
+                    } else {
+                        // Semi-open file towards Black king
+                        mgScore += 15;
+                        if ((board.pieceBB[W_ROOK] | board.pieceBB[W_QUEEN]) & fileMask[f]) {
+                            mgScore += 15;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Virtual Attacker Count & King Zone Danger (Middlegame)
+        uint64_t bKingZone = Movegen::getKingAttacks(bKingSq) | (1ULL << bKingSq);
+        if (kRank >= 6) {
+            bKingZone |= (bKingZone >> 8); // Add forward rank towards White
+        }
+
+        int attackerCount = 0;
+        int attackWeight = 0;
+
+        uint64_t wKnights = board.pieceBB[W_KNIGHT];
+        while (wKnights) {
+            int sq = __builtin_ctzll(wKnights);
+            wKnights &= wKnights - 1;
+            int hits = __builtin_popcountll(Movegen::getKnightAttacks(sq) & bKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 2 * hits;
+            }
+        }
+
+        uint64_t wBishops = board.pieceBB[W_BISHOP];
+        while (wBishops) {
+            int sq = __builtin_ctzll(wBishops);
+            wBishops &= wBishops - 1;
+            int hits = __builtin_popcountll(Movegen::getBishopAttacks(sq, occAll) & bKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 2 * hits;
+            }
+        }
+
+        uint64_t wRooks = board.pieceBB[W_ROOK];
+        while (wRooks) {
+            int sq = __builtin_ctzll(wRooks);
+            wRooks &= wRooks - 1;
+            int hits = __builtin_popcountll(Movegen::getRookAttacks(sq, occAll) & bKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 3 * hits;
+            }
+        }
+
+        uint64_t wQueens = board.pieceBB[W_QUEEN];
+        while (wQueens) {
+            int sq = __builtin_ctzll(wQueens);
+            wQueens &= wQueens - 1;
+            int hits = __builtin_popcountll(Movegen::getQueenAttacks(sq, occAll) & bKingZone);
+            if (hits > 0) {
+                attackerCount++;
+                attackWeight += 5 * hits;
+            }
+        }
+
+        if (attackerCount >= 2) {
+            int dangerIndex = std::min(99, attackWeight * 3);
+            if (!board.pieceBB[W_QUEEN]) {
+                dangerIndex /= 2;
+            }
+            mgScore += kingDangerTable[dangerIndex];
+        }
+    }
+}
+
 int getGamePhase(const Board& board) {
     int phase = 0;
     phase += __builtin_popcountll(board.pieceBB[W_KNIGHT] | board.pieceBB[B_KNIGHT]) * 1;
@@ -722,6 +963,11 @@ int evaluate(const Board& board) {
     // 4.4 Piece Activity & Coordination Evaluation
     // ------------------------------------------------------------------------
     evaluatePieceActivity(board, mgScore, egScore);
+
+    // ------------------------------------------------------------------------
+    // 4.5 King Safety Evaluation
+    // ------------------------------------------------------------------------
+    evaluateKingSafety(board, mgScore, egScore);
 
     // ------------------------------------------------------------------------
     // Tapered Interpolation by Game Phase (4.2)
