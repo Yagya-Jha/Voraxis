@@ -17,6 +17,7 @@ bool stopSearch = false;
 long long searchedNodes = 0;
 int historyTable[12][64];
 Move killerMoves[64][2];
+Move counterMoveTable[64][64];
 
 std::vector<TTEntry> ttTable(TT_ENTRIES);
 
@@ -85,7 +86,8 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     }
     std::memset(killerMoves, 0, sizeof(killerMoves));
     std::memset(historyTable, 0, sizeof(historyTable));
-    std::vector<Move> legalMoves = returnSortedMoves(board, 1);
+    std::memset(counterMoveTable, 0, sizeof(counterMoveTable));
+    std::vector<Move> legalMoves = returnSortedMoves(board, 0, Move());
     if (legalMoves.empty()) {
         return Move();
     }
@@ -124,13 +126,13 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
 
                 if (movesSearched == 0) {
                     // First move searched with full window
-                    score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1);
+                    score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1, true, Move(), move);
                 } else {
                     // Subsequent moves searched with null window
-                    score = -negamax(board, currDepth - 1, -searchAlpha - 1, -searchAlpha, limits, 1);
+                    score = -negamax(board, currDepth - 1, -searchAlpha - 1, -searchAlpha, limits, 1, true, Move(), move);
                     // Re-search with full window if failed high
                     if (score > searchAlpha && score < beta) {
-                        score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1);
+                        score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1, true, Move(), move);
                     }
                 }
 
@@ -217,7 +219,7 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     return bestMove;
 }
 
-std::vector<Move> returnSortedMoves(Board& board, int ply) {
+std::vector<Move> returnSortedMoves(Board& board, int ply, const Move& prevMove) {
     std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
     Move ttMove;
     TTEntry* entry = probeTT(board.zobristKey);
@@ -225,8 +227,8 @@ std::vector<Move> returnSortedMoves(Board& board, int ply) {
         ttMove = entry->bestMove;
     }
 
-    std::sort(legalMoves.begin(), legalMoves.end(), [&board, ply, ttMove](const Move& a, const Move& b) {
-        return scoreMove(board, a, ply, ttMove) > scoreMove(board, b, ply, ttMove);
+    std::sort(legalMoves.begin(), legalMoves.end(), [&board, ply, ttMove, prevMove](const Move& a, const Move& b) {
+        return scoreMove(board, a, ply, ttMove, prevMove) > scoreMove(board, b, ply, ttMove, prevMove);
     });
     return legalMoves;
 }
@@ -292,44 +294,64 @@ int getPieceValue(int pType) {
     return arr[pType];
 }
 
-int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove) {
+int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove, const Move& prevMove) {
+    // 1. TT / Hash move
     if (ttMove.from != SQ_NONE && move == ttMove) {
         return 30000;
     }
-    int score = 0;
+
+    // Captures (Winning & equal captures vs Bad captures)
     if (move.captured != NO_PIECE || move.isEnPassant) {
         int seeScore = SEE::evaluate(board, move);
         if (seeScore >= 0) {
-            // Winning / equal captures: high priority
+            // 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker)
             int vic_val = (move.captured != NO_PIECE) ? getPieceValue(pieceType(move.captured)) : 100;
             int att_val = getPieceValue(pieceType(move.piece));
-            score = 10000 + (vic_val * 10 - att_val) + seeScore;
+            return 20000 + (vic_val * 10 - att_val) + seeScore;
         } else {
-            // Losing capture: demoted below quiet moves and killers
-            score = -10000 + seeScore;
+            // 7. Bad captures (losing captures): ordered below countermoves and good quiets, but above remaining quiets
+            // seeScore is negative (e.g. -100 to -900). Range: 410 to 490
+            return 500 + (seeScore / 10);
         }
-        return score;
     }
+
+    // 3. Queen promotions
     if (move.promotion != NO_PIECE) {
-        score += 9000;
+        if (move.promotion == W_QUEEN || move.promotion == B_QUEEN) {
+            return 18000;
+        }
+        return 10000; // Underpromotions
     }
+
+    // 4. Killer moves (quiet moves causing beta cutoffs at same ply)
     if (ply < 64 && move == killerMoves[ply][0]) {
-        score = 8000;
+        return 16000;
     } else if (ply < 64 && move == killerMoves[ply][1]) {
-        score = 7000;
-    } else {
-        if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
-            score = historyTable[move.piece][move.to];
+        return 15000;
+    }
+
+    // 6. Countermove heuristic (refutation move to opponent's previous move)
+    if (prevMove.from != SQ_NONE && move == counterMoveTable[prevMove.from][prevMove.to]) {
+        return 14000;
+    }
+
+    // 5. History heuristic (quiet moves indexed by [piece][to_square])
+    if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
+        int hist = historyTable[move.piece][move.to];
+        if (hist > 0) {
+            return 1000 + std::min(hist, 12000);
         }
     }
-    return score;
+
+    // 8. Remaining quiet moves
+    return 0;
 }
 
 int scoreMove(const Board& board, const Move move, int ply) {
-    return scoreMove(board, move, ply, Move());
+    return scoreMove(board, move, ply, Move(), Move());
 }
 
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull, Move excludedMove) {
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull, Move excludedMove, Move prevMove) {
     searchedNodes++;
     checkTime(limits);
     if (stopSearch) {
@@ -462,13 +484,13 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         excludedMove.from == SQ_NONE) {
 
         int sBeta = ttScore - 2 * depth;
-        int sScore = negamax(board, depth / 2, sBeta - 1, sBeta, limits, ply, false, ttMove);
+        int sScore = negamax(board, depth / 2, sBeta - 1, sBeta, limits, ply, false, ttMove, prevMove);
         if (sScore < sBeta) {
             extension = 1;
         }
     }
 
-    std::vector<Move> legalMoves = returnSortedMoves(board, ply);
+    std::vector<Move> legalMoves = returnSortedMoves(board, ply, prevMove);
 
     if (legalMoves.empty()) {
         if (inCheck) {
@@ -508,7 +530,7 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
 
         if (movesSearched == 0) {
             // First move searched with full window
-            score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1);
+            score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1, true, Move(), move);
         } else {
             // 1.9 Late Move Reductions (LMR)
             bool canLMR = (depth >= 3 && movesSearched >= 3 && isQuiet && !inCheck &&
@@ -516,18 +538,18 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
             if (canLMR) {
                 int R = 1 + (depth >= 6 ? 1 : 0) + (movesSearched >= 8 ? 1 : 0);
                 int reducedDepth = std::max(1, targetDepth - R);
-                score = -negamax(board, reducedDepth, -alpha - 1, -alpha, limits, ply + 1);
+                score = -negamax(board, reducedDepth, -alpha - 1, -alpha, limits, ply + 1, true, Move(), move);
                 if (score > alpha) {
                     // Re-search at full depth with null window
-                    score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1);
+                    score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1, true, Move(), move);
                 }
             } else {
-                score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1);
+                score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1, true, Move(), move);
             }
 
             // Re-search with full window if failed high
             if (score > alpha && score < beta) {
-                score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1);
+                score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1, true, Move(), move);
             }
         }
 
@@ -546,8 +568,14 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
                         killerMoves[ply][0] = move;
                     }
                 }
+                if (prevMove.from != SQ_NONE) {
+                    counterMoveTable[prevMove.from][prevMove.to] = move;
+                }
                 if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
                     historyTable[move.piece][move.to] += depth * depth;
+                    if (historyTable[move.piece][move.to] > 100000) {
+                        historyTable[move.piece][move.to] = 100000;
+                    }
                 }
             }
             if (excludedMove.from == SQ_NONE) {

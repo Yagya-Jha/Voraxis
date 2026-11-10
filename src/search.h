@@ -44,6 +44,7 @@ extern bool stopSearch;
 extern long long searchedNodes;
 extern int historyTable[12][64];
 extern Move killerMoves[64][2];
+extern Move counterMoveTable[64][64];
 extern std::vector<TTEntry> ttTable;
 
 // Time and limits utilities
@@ -59,14 +60,14 @@ void clearTT();
 
 // Move scoring and ordering
 int getPieceValue(int pType);
-int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove);
+int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove, const Move& prevMove = Move());
 int scoreMove(const Board& board, const Move move, int ply = 0);
-std::vector<Move> returnSortedMoves(Board& board, int ply = 0);
+std::vector<Move> returnSortedMoves(Board& board, int ply = 0, const Move& prevMove = Move());
 
 // Search algorithms
 Move getBestMove(Board& board, const SearchLimits& limits = SearchLimits());
 int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, int ply = 0);
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0, bool allowNull = true, Move excludedMove = Move());
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0, bool allowNull = true, Move excludedMove = Move(), Move prevMove = Move());
 
 } // namespace Search
 } // namespace Voraxis

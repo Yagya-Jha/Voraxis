@@ -111,9 +111,9 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] 3. Queen promotions.
     [x] 4. Killer moves (quiet moves causing beta cutoffs at same ply).
     [x] 5. History heuristic (quiet moves indexed by [piece][to_square]).
-    - 6. Countermove heuristic.
-    - 7. Bad captures (losing captures).
-    - 8. Remaining quiet moves.
+    [x] 6. Countermove heuristic (quiet moves indexed by [prev_from][prev_to]).
+    [x] 7. Bad captures (losing captures ordered by SEE score).
+    [x] 8. Remaining quiet moves.
 
 [x] 3.3 Static Exchange Evaluation (SEE) (COMPLETED)
     [x] Fast capture exchange evaluation to prune or order losing captures.
