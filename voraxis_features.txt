@@ -62,8 +62,8 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 
 [ ] 1.14 Other Search Controls & Mate Distance Pruning
     - Maximum ply limit (e.g. 64 / 128).
-    - Mate-distance scoring adjustments (closer mate is scored higher).
-    - Node counters & search cancellation flag.
+    [x] Mate-distance scoring adjustments (closer mate is scored higher).
+    [x] Node counters & search cancellation flag.
 
 ================================================================================
 2. TRANSPOSITION TABLE (TT)
@@ -76,21 +76,21 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] En-passant square keys.
     [x] Incremental updates on make/unmake + full computation verification.
 
-[ ] 2.2 Table Entries
-    - 64-bit Zobrist key / verification signature.
-    - Search depth.
-    - Evaluated score (adjusted for mate distance).
-    - Bound flag: EXACT, LOWERBOUND (beta cutoff), UPPERBOUND (all-node fail-low).
-    - Best move (hash move).
+[x] 2.2 Table Entries (COMPLETED)
+    [x] 64-bit Zobrist key / verification signature.
+    [x] Search depth.
+    [x] Evaluated score (adjusted for mate distance).
+    [x] Bound flag: EXACT, LOWERBOUND (beta cutoff), UPPERBOUND (all-node fail-low).
+    [x] Best move (hash move).
     - Age / generation.
 
-[ ] 2.3 Probe and Store Logic
-    - Cutoff conditions based on depth and stored bound.
-    - Extract TT move for move ordering even when depth is insufficient for cutoff.
-    - Convert mate scores to/from ply-independent format.
+[x] 2.3 Probe and Store Logic (COMPLETED)
+    [x] Cutoff conditions based on depth and stored bound.
+    [x] Extract TT move for move ordering even when depth is insufficient for cutoff.
+    [x] Convert mate scores to/from ply-independent format.
 
-[ ] 2.4 Replacement Policy & Sizing
-    - Depth-preferred or 2-tier replacement scheme.
+[x] 2.4 Replacement Policy & Sizing (COMPLETED)
+    [x] Depth-preferred replacement scheme.
     - Configurable hash size via UCI ("setoption name Hash value X").
 
 ================================================================================
@@ -105,8 +105,8 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Promotions to Q, R, B, N.
     [x] Verified across 22 benchmark positions via Perft suite (12.5M nodes).
 
-[ ] 3.2 Move Ordering
-    - 1. TT / Hash move (after TT implementation).
+[x] 3.2 Move Ordering (COMPLETED)
+    [x] 1. TT / Hash move.
     [x] 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker).
     [x] 3. Queen promotions.
     [x] 4. Killer moves (quiet moves causing beta cutoffs at same ply).

@@ -61,6 +61,7 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
         std::cout.flush();
     } else if (command == "ucinewgame") {
         board.reset();
+        Search::clearTT();
     } else if (command == "position") {
         parsePosition(iss, board);
     } else if (command == "stop") {

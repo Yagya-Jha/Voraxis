@@ -56,28 +56,28 @@ int evaluate(const Board& board) {
     while (wPawns) {
         int sq = __builtin_ctzll(wPawns);
         wPawns &= wPawns - 1;
-        score += PAWN_VALUE + pawnTable[63 - sq];
+        score += PAWN_VALUE + pawnTable[sq ^ 56];
     }
 
     uint64_t wKnights = board.pieceBB[W_KNIGHT];
     while (wKnights) {
         int sq = __builtin_ctzll(wKnights);
         wKnights &= wKnights - 1;
-        score += KNIGHT_VALUE + knightTable[63 - sq];
+        score += KNIGHT_VALUE + knightTable[sq ^ 56];
     }
 
     uint64_t wBishops = board.pieceBB[W_BISHOP];
     while (wBishops) {
         int sq = __builtin_ctzll(wBishops);
         wBishops &= wBishops - 1;
-        score += BISHOP_VALUE + bishopTable[63 - sq];
+        score += BISHOP_VALUE + bishopTable[sq ^ 56];
     }
 
     uint64_t wRooks = board.pieceBB[W_ROOK];
     while (wRooks) {
         int sq = __builtin_ctzll(wRooks);
         wRooks &= wRooks - 1;
-        score += ROOK_VALUE + rookTable[63 - sq];
+        score += ROOK_VALUE + rookTable[sq ^ 56];
     }
 
     uint64_t wQueens = board.pieceBB[W_QUEEN];
