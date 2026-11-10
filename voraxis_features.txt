@@ -36,32 +36,32 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Stand-pat evaluation threshold.
     [x] Avoid horizon effect.
 
-[ ] 1.7 Aspiration Windows
-    - Narrow initial window around previous iteration's score [score - delta, score + delta].
-    - Re-search wider on fail-low or fail-high.
+[x] 1.7 Aspiration Windows (COMPLETED)
+    [x] Narrow initial window around previous iteration's score [score - delta, score + delta].
+    [x] Re-search wider on fail-low or fail-high.
 
-[ ] 1.8 Check Extensions
-    - Extend search depth by 1 ply when in check.
+[x] 1.8 Check Extensions (COMPLETED)
+    [x] Extend search depth by 1 ply when in check.
 
-[ ] 1.9 Late Move Reductions (LMR)
-    - Search quiet moves late in the move list at reduced depth.
-    - Re-search at full depth if they exceed alpha.
+[x] 1.9 Late Move Reductions (LMR) (COMPLETED)
+    [x] Search quiet moves late in the move list at reduced depth.
+    [x] Re-search at full depth if they exceed alpha.
 
 [x] 1.10 Null Move Pruning (COMPLETED)
     [x] Pass turn to verify if opponent can still not breach beta.
     [x] Guard against zugzwang in late endgame.
 
-[ ] 1.11 Futility Pruning
-    - Prune hopeless quiet moves near leaf nodes if eval + margin < alpha.
+[x] 1.11 Futility Pruning (COMPLETED)
+    [x] Prune hopeless quiet moves near leaf nodes if eval + margin < alpha.
 
-[ ] 1.12 Razoring
-    - Early quiescence drop at shallow pre-frontier nodes if eval is far below alpha.
+[x] 1.12 Razoring (COMPLETED)
+    [x] Early quiescence drop at shallow pre-frontier nodes if eval is far below alpha.
 
-[ ] 1.13 Singular Extensions
-    - Extend search if the TT move is significantly better than all alternatives.
+[x] 1.13 Singular Extensions (COMPLETED)
+    [x] Extend search if the TT move is significantly better than all alternatives.
 
-[ ] 1.14 Other Search Controls & Mate Distance Pruning
-    - Maximum ply limit (e.g. 64 / 128).
+[x] 1.14 Other Search Controls & Mate Distance Pruning (COMPLETED)
+    [x] Maximum ply limit (e.g. 64 / 128).
     [x] Mate-distance scoring adjustments (closer mate is scored higher).
     [x] Node counters & search cancellation flag.
 

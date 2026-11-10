@@ -102,42 +102,89 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     }
 
     Move bestMove = legalMoves[0];
+    int prevScore = 0;
 
     for (int currDepth = 1; currDepth <= maxDepth; ++currDepth) {
-        int alpha = -1000000;
-        int beta = 1000000;
+        int delta = 50;
+        int alpha = (currDepth >= 4) ? std::max(-MATE_SCORE, prevScore - delta) : -MATE_SCORE;
+        int beta  = (currDepth >= 4) ? std::min(MATE_SCORE, prevScore + delta) : MATE_SCORE;
+
         Move currentIterBestMove = legalMoves[0];
         bool completedMoveFound = false;
+        int currentIterScore = 0;
 
-        int movesSearched = 0;
-        for (Move move : legalMoves) {
-            board.applyMove(move);
-            int score = 0;
+        while (true) {
+            int movesSearched = 0;
+            int bestScore = -MATE_SCORE;
+            int searchAlpha = alpha;
 
-            if (movesSearched == 0) {
-                // First move searched with full window
-                score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
-            } else {
-                // Subsequent moves searched with null window
-                score = -negamax(board, currDepth - 1, -alpha - 1, -alpha, limits, 1);
-                // Re-search with full window if failed high
-                if (score > alpha && score < beta) {
-                    score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
+            for (Move move : legalMoves) {
+                board.applyMove(move);
+                int score = 0;
+
+                if (movesSearched == 0) {
+                    // First move searched with full window
+                    score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1);
+                } else {
+                    // Subsequent moves searched with null window
+                    score = -negamax(board, currDepth - 1, -searchAlpha - 1, -searchAlpha, limits, 1);
+                    // Re-search with full window if failed high
+                    if (score > searchAlpha && score < beta) {
+                        score = -negamax(board, currDepth - 1, -beta, -searchAlpha, limits, 1);
+                    }
+                }
+
+                board.undoMove(move);
+                movesSearched++;
+
+                if (stopSearch) {
+                    break;
+                }
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    currentIterBestMove = move;
+                }
+
+                if (score > searchAlpha) {
+                    searchAlpha = score;
+                }
+
+                if (searchAlpha >= beta) {
+                    break;
                 }
             }
-
-            board.undoMove(move);
-            movesSearched++;
 
             if (stopSearch) {
                 break;
             }
 
-            if (score > alpha) {
-                alpha = score;
-                currentIterBestMove = move;
-                completedMoveFound = true;
+            // Aspiration window bounds check
+            if (currDepth >= 4) {
+                if (bestScore <= alpha) {
+                    // Fail low: widen lower bound and re-search
+                    alpha = std::max(-MATE_SCORE, alpha - delta);
+                    delta *= 2;
+                    if (delta > 800) {
+                        alpha = -MATE_SCORE;
+                        beta = MATE_SCORE;
+                    }
+                    continue;
+                } else if (bestScore >= beta) {
+                    // Fail high: widen upper bound and re-search
+                    beta = std::min(MATE_SCORE, beta + delta);
+                    delta *= 2;
+                    if (delta > 800) {
+                        alpha = -MATE_SCORE;
+                        beta = MATE_SCORE;
+                    }
+                    continue;
+                }
             }
+
+            currentIterScore = bestScore;
+            completedMoveFound = true;
+            break;
         }
 
         if (stopSearch) {
@@ -147,9 +194,10 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
 
         if (completedMoveFound) {
             bestMove = currentIterBestMove;
-            storeTT(board.zobristKey, currDepth, alpha, TT_EXACT, bestMove, 0);
+            prevScore = currentIterScore;
+            storeTT(board.zobristKey, currDepth, prevScore, TT_EXACT, bestMove, 0);
             long long elapsed = limits.startTime > 0 ? (nowMs() - limits.startTime) : 0;
-            std::cout << "info depth " << currDepth << " score cp " << alpha << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
+            std::cout << "info depth " << currDepth << " score cp " << prevScore << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
             std::cout.flush();
         }
 
@@ -281,11 +329,16 @@ int scoreMove(const Board& board, const Move move, int ply) {
     return scoreMove(board, move, ply, Move());
 }
 
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull) {
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull, Move excludedMove) {
     searchedNodes++;
     checkTime(limits);
     if (stopSearch) {
         return 0;
+    }
+
+    // 1.14 Maximum ply limit
+    if (ply >= 128) {
+        return (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
     }
 
     // In-search draw detection (repetition, 50-move rule, insufficient material)
@@ -293,11 +346,34 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         return 0;
     }
 
-    // TT Probe & Cutoff (skip cutoff at root ply == 0)
+    // 1.14 Mate Distance Pruning
+    if (ply > 0) {
+        alpha = std::max(alpha, -MATE_SCORE + ply);
+        beta = std::min(beta, MATE_SCORE - ply - 1);
+        if (alpha >= beta) {
+            return alpha;
+        }
+    }
+
+    // 1.8 Check Extensions: extend search depth by 1 ply when in check
+    bool inCheck = Movegen::inCheck(board, board.getSideToMove());
+    if (inCheck && ply < 64) {
+        depth++;
+    }
+
+    if (depth <= 0) {
+        return quiescence(board, alpha, beta, limits, ply);
+    }
+
+    // TT Probe & Cutoff (skip cutoff at root ply == 0 or when a move is excluded)
     TTEntry* entry = probeTT(board.zobristKey);
-    if (entry && entry->key == board.zobristKey && ply > 0) {
-        if (entry->depth >= depth) {
-            int ttScore = scoreFromTT(entry->score, ply);
+    Move ttMove;
+    int ttScore = 0;
+    bool ttHit = (entry && entry->key == board.zobristKey);
+    if (ttHit) {
+        ttMove = entry->bestMove;
+        ttScore = scoreFromTT(entry->score, ply);
+        if (ply > 0 && entry->depth >= depth && excludedMove.from == SQ_NONE) {
             if (entry->flag == TT_EXACT) {
                 return ttScore;
             }
@@ -311,7 +387,7 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
     }
 
     // Syzygy WDL Probe during search (instant game-theoretic cutoff)
-    if (ply > 0 && Syzygy::isLoaded()) {
+    if (ply > 0 && Syzygy::isLoaded() && excludedMove.from == SQ_NONE) {
         uint64_t occAll = board.occBB[WHITE] | board.occBB[BLACK];
         int pieceCount = __builtin_popcountll(occAll);
         if (pieceCount <= Syzygy::getMaxPieces() && board.castlingRights == NO_CASTLING) {
@@ -344,10 +420,22 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
     }
 
-    // Null Move Pruning (NMP)
-    if (allowNull && depth >= 3 && ply > 0 && !Movegen::inCheck(board, board.getSideToMove())) {
+    int staticEval = inCheck ? (-MATE_SCORE + ply) : ((board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board));
+
+    // 1.12 Razoring: Early quiescence drop at shallow pre-frontier nodes if eval is far below alpha
+    if (!inCheck && depth <= 3 && ply > 0 && excludedMove.from == SQ_NONE) {
+        const int razorMargin[4] = {0, 200, 350, 500};
+        if (staticEval + razorMargin[depth] <= alpha) {
+            int rScore = quiescence(board, alpha, beta, limits, ply);
+            if (rScore <= alpha) {
+                return rScore;
+            }
+        }
+    }
+
+    // 1.10 Null Move Pruning (NMP)
+    if (allowNull && depth >= 3 && ply > 0 && !inCheck && excludedMove.from == SQ_NONE) {
         if (board.hasNonPawnMaterial(board.getSideToMove())) {
-            int staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
             if (staticEval >= beta) {
                 int R = (depth >= 6) ? 3 : 2;
 
@@ -366,14 +454,24 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
     }
 
-    if (depth <= 0) {
-        return quiescence(board, alpha, beta, limits, ply);
+    // 1.13 Singular Extensions: extend search if TT move is significantly better than all alternatives
+    int extension = 0;
+    if (ply > 0 && depth >= 6 && ttHit && ttMove.from != SQ_NONE &&
+        (entry->flag == TT_LOWERBOUND || entry->flag == TT_EXACT) &&
+        entry->depth >= depth - 3 && std::abs(ttScore) < MATE_THRESHOLD &&
+        excludedMove.from == SQ_NONE) {
+
+        int sBeta = ttScore - 2 * depth;
+        int sScore = negamax(board, depth / 2, sBeta - 1, sBeta, limits, ply, false, ttMove);
+        if (sScore < sBeta) {
+            extension = 1;
+        }
     }
 
     std::vector<Move> legalMoves = returnSortedMoves(board, ply);
 
     if (legalMoves.empty()) {
-        if (Movegen::inCheck(board, board.getSideToMove())) {
+        if (inCheck) {
             return -MATE_SCORE + ply;
         } else {
             return 0;
@@ -385,18 +483,51 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
     int movesSearched = 0;
 
     for (Move move : legalMoves) {
+        if (move == excludedMove) {
+            continue;
+        }
+
+        bool isCapture = (move.captured != NO_PIECE || move.isEnPassant);
+        bool isPromotion = (move.promotion != NO_PIECE);
+        bool isQuiet = !isCapture && !isPromotion;
+
+        // 1.11 Futility Pruning: prune hopeless quiet moves near leaf nodes if eval + margin < alpha
+        if (movesSearched > 0 && depth <= 2 && !inCheck && isQuiet && ply > 0 && excludedMove.from == SQ_NONE) {
+            if (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])) {
+                int margin = (depth == 1) ? 150 : 300;
+                if (staticEval + margin <= alpha) {
+                    continue; // Prune quiet move
+                }
+            }
+        }
+
         board.applyMove(move);
         int score = 0;
+        int moveExtension = (move == ttMove) ? extension : 0;
+        int targetDepth = depth - 1 + moveExtension;
 
         if (movesSearched == 0) {
             // First move searched with full window
-            score = -negamax(board, depth - 1, -beta, -alpha, limits, ply + 1);
+            score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1);
         } else {
-            // Subsequent moves searched with zero / null window
-            score = -negamax(board, depth - 1, -alpha - 1, -alpha, limits, ply + 1);
+            // 1.9 Late Move Reductions (LMR)
+            bool canLMR = (depth >= 3 && movesSearched >= 3 && isQuiet && !inCheck &&
+                           (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])));
+            if (canLMR) {
+                int R = 1 + (depth >= 6 ? 1 : 0) + (movesSearched >= 8 ? 1 : 0);
+                int reducedDepth = std::max(1, targetDepth - R);
+                score = -negamax(board, reducedDepth, -alpha - 1, -alpha, limits, ply + 1);
+                if (score > alpha) {
+                    // Re-search at full depth with null window
+                    score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1);
+                }
+            } else {
+                score = -negamax(board, targetDepth, -alpha - 1, -alpha, limits, ply + 1);
+            }
+
             // Re-search with full window if failed high
             if (score > alpha && score < beta) {
-                score = -negamax(board, depth - 1, -beta, -alpha, limits, ply + 1);
+                score = -negamax(board, targetDepth, -beta, -alpha, limits, ply + 1);
             }
         }
 
@@ -408,7 +539,7 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
 
         if (score >= beta) {
-            if (move.captured == NO_PIECE) {
+            if (isQuiet) {
                 if (ply < 64) {
                     if (move != killerMoves[ply][0]) {
                         killerMoves[ply][1] = killerMoves[ply][0];
@@ -419,7 +550,9 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
                     historyTable[move.piece][move.to] += depth * depth;
                 }
             }
-            storeTT(board.zobristKey, depth, beta, TT_LOWERBOUND, move, ply);
+            if (excludedMove.from == SQ_NONE) {
+                storeTT(board.zobristKey, depth, beta, TT_LOWERBOUND, move, ply);
+            }
             return beta;
         }
         if (score > alpha) {
@@ -428,8 +561,14 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
     }
 
-    TTFlag flag = (alpha > originalAlpha) ? TT_EXACT : TT_UPPERBOUND;
-    storeTT(board.zobristKey, depth, alpha, flag, bestMove, ply);
+    if (excludedMove.from != SQ_NONE && movesSearched == 0) {
+        return alpha;
+    }
+
+    if (excludedMove.from == SQ_NONE) {
+        TTFlag flag = (alpha > originalAlpha) ? TT_EXACT : TT_UPPERBOUND;
+        storeTT(board.zobristKey, depth, alpha, flag, bestMove, ply);
+    }
 
     return alpha;
 }

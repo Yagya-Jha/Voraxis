@@ -66,7 +66,7 @@ std::vector<Move> returnSortedMoves(Board& board, int ply = 0);
 // Search algorithms
 Move getBestMove(Board& board, const SearchLimits& limits = SearchLimits());
 int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, int ply = 0);
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0, bool allowNull = true);
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0, bool allowNull = true, Move excludedMove = Move());
 
 } // namespace Search
 } // namespace Voraxis
