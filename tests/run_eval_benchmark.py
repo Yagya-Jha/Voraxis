@@ -5,6 +5,7 @@ Analyzes Elo difference, pawn promotions, and strategic behavior.
 import math
 import re
 import subprocess
+import sys
 import time
 from pathlib import Path
 from tests.config import CUTECHESS_EXE, PROJECT_ROOT, PGN_DIR
@@ -12,7 +13,7 @@ from tests.config import CUTECHESS_EXE, PROJECT_ROOT, PGN_DIR
 CMD_NEW = PROJECT_ROOT / "build" / "voraxis.exe"
 CMD_OLD = PROJECT_ROOT / "build" / "voraxis_pre_eval.exe"
 
-TOTAL_GAMES = 20
+TOTAL_GAMES = 40
 CONCURRENCY = 4
 TIME_CONTROL = "5+0.1"
 
@@ -64,18 +65,17 @@ def analyze_pgn_behavior(pgn_path):
             continue
         moves = parts[1]
 
-        # Count promotions: e.g. e8=Q, d1=Q, a8=R, etc.
-        # Format in cutechess PGN can be "=Q" or e7e8q
-        w_proms = len(re.findall(r'[a-h][18]=[QRBN]', moves)) + len(re.findall(r'[a-h][27][a-h][18][qrbn]', moves))
-        # Attribute promotions per side
-        # Parse tokens
-        tokens = moves.split()
+        # Remove comment blocks { ... }
+        clean_moves = re.sub(r'\{[^}]*\}', '', moves)
+        tokens = clean_moves.split()
         is_white_turn = True
         for tok in tokens:
             if re.match(r'^\d+\.', tok):
                 is_white_turn = True
                 continue
-            if "=" in tok or (len(tok) == 5 and tok[4] in "qrbn"):
+            if tok in ("1-0", "0-1", "1/2-1/2", "*"):
+                continue
+            if "=" in tok or (len(tok) == 5 and tok[4] in "qrbnQRBN"):
                 eng = white if is_white_turn else black
                 if eng in stats:
                     stats[eng]["promotions"] += 1
@@ -91,8 +91,9 @@ def analyze_pgn_behavior(pgn_path):
 
 
 def main():
+    total_games = int(sys.argv[1]) if len(sys.argv) > 1 else TOTAL_GAMES
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    pgn_path = PGN_DIR / f"voraxis_eval_4_vs_pre_eval_20g_{timestamp}.pgn"
+    pgn_path = PGN_DIR / f"voraxis_eval_4_vs_pre_eval_{total_games}g_{timestamp}.pgn"
     pgn_path.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -101,17 +102,17 @@ def main():
         "-engine", f"cmd={CMD_NEW}", f"dir={PROJECT_ROOT}", "name=Voraxis_Eval_4_Complete", "proto=uci",
         "-engine", f"cmd={CMD_OLD}", f"dir={PROJECT_ROOT}", "name=Voraxis_Pre_Eval", "proto=uci",
         "-each", f"tc={TIME_CONTROL}",
-        "-rounds", str(TOTAL_GAMES),
+        "-rounds", str(total_games),
         "-concurrency", str(CONCURRENCY),
         "-pgnout", str(pgn_path),
     ]
 
     print("=" * 75)
-    print("      VORAXIS 20-GAME BENCHMARK: EVALUATION 4 COMPLETE vs PRE-EVAL     ")
+    print(f"      VORAXIS {total_games}-GAME BENCHMARK: EVALUATION 4 COMPLETE vs PRE-EVAL     ")
     print("=" * 75)
     print(f"Engine 1 (New) : {CMD_NEW.name} (Tapered PeSTO, Pawns, Activity, King Safety, Mop-Up)")
     print(f"Engine 2 (Old) : {CMD_OLD.name} (Search 1.7-1.14 + 3.2 + 8.2 with baseline eval)")
-    print(f"Games          : {TOTAL_GAMES} (4 simultaneous games)")
+    print(f"Games          : {total_games} (4 simultaneous games)")
     print(f"Time Control   : {TIME_CONTROL}")
     print(f"PGN File       : {pgn_path.name}")
     print("=" * 75 + "\n")
@@ -160,7 +161,7 @@ def main():
                 results[black]["draws"] += 1
                 outcome_desc = f"DRAW between {white} and {black}"
 
-            print(f"[{completed_games:02d}/{TOTAL_GAMES}] Game {game_num:>2}: {outcome_desc:<45} ({result}) | Reason: {reason}")
+            print(f"[{completed_games:02d}/{total_games}] Game {game_num:>2}: {outcome_desc:<45} ({result}) | Reason: {reason}")
 
     proc.wait()
 
@@ -174,14 +175,14 @@ def main():
     d_old = results["Voraxis_Pre_Eval"]["draws"]
     pts_old = w_old + 0.5 * d_old
 
-    elo_diff, elo_err = calculate_elo(pts_new, TOTAL_GAMES)
+    elo_diff, elo_err = calculate_elo(pts_new, total_games)
     behavior = analyze_pgn_behavior(pgn_path)
 
     print("\n" + "=" * 75)
     print("                          TOURNAMENT FINAL SCORE                          ")
     print("=" * 75)
-    print(f"Voraxis_Eval_4_Complete : {pts_new:4.1f} / {TOTAL_GAMES}  ({pts_new/TOTAL_GAMES*100:5.1f}%)  [{w_new}W - {l_new}L - {d_new}D]")
-    print(f"Voraxis_Pre_Eval        : {pts_old:4.1f} / {TOTAL_GAMES}  ({pts_old/TOTAL_GAMES*100:5.1f}%)  [{w_old}W - {l_old}L - {d_old}D]")
+    print(f"Voraxis_Eval_4_Complete : {pts_new:4.1f} / {total_games}  ({pts_new/total_games*100:5.1f}%)  [{w_new}W - {l_new}L - {d_new}D]")
+    print(f"Voraxis_Pre_Eval        : {pts_old:4.1f} / {total_games}  ({pts_old/total_games*100:5.1f}%)  [{w_old}W - {l_old}L - {d_old}D]")
     print("=" * 75)
 
     print("\n" + "=" * 75)
@@ -189,7 +190,7 @@ def main():
     print("=" * 75)
     sign = "+" if elo_diff >= 0 else ""
     print(f"Estimated Elo Gain      : {sign}{elo_diff:.1f} +/- {elo_err:.1f} Elo (95% CI)")
-    print(f"Win Percentage          : {pts_new/TOTAL_GAMES*100:.1f}%")
+    print(f"Win Percentage          : {pts_new/total_games*100:.1f}%")
     print("=" * 75)
 
     print("\n" + "=" * 75)
