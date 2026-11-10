@@ -28,7 +28,7 @@ struct BookEntry {
 
 static std::vector<BookEntry> s_bookEntries;
 static bool s_loaded = false;
-static std::mt19937 s_rng(1337);
+static std::mt19937 s_rng(std::random_device{}());
 
 bool init(const std::string& bookPath) {
     std::string path = bookPath;

@@ -12,6 +12,7 @@ from tests.config import (
     CUTECHESS_EXE,
     PGN_DIR,
     RESULTS_DIR,
+    PROJECT_ROOT,
 )
 
 VORAXIS_BASELINE_EXE = VORAXIS_EXE.parent / "voraxis_baseline.exe"
@@ -34,13 +35,13 @@ def run_experiment_match(
 
     cmd = [
         str(CUTECHESS_EXE),
-        "-engine", f"cmd={cmd1}", f"name={name1}", "proto=uci",
+        "-engine", f"cmd={cmd1}", f"dir={PROJECT_ROOT}", f"name={name1}", "proto=uci",
     ]
     for k, v in opts1.items():
         cmd.append(f"option.{k}={v}")
 
     cmd.extend([
-        "-engine", f"cmd={cmd2}", f"name={name2}", "proto=uci",
+        "-engine", f"cmd={cmd2}", f"dir={PROJECT_ROOT}", f"name={name2}", "proto=uci",
     ])
     for k, v in opts2.items():
         cmd.append(f"option.{k}={v}")
@@ -145,9 +146,9 @@ def main():
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     suite_summary = []
 
-    # 1. Voraxis (with PVS + NMP + TT) vs Voraxis (Baseline)
+    # 1. Voraxis (with Book + Syzygy + PVS + NMP + TT) vs Voraxis (Baseline: PVS + NMP without Book/Syzygy)
     res0 = run_experiment_match(
-        name1="Voraxis_PVS",
+        name1="Voraxis_New",
         cmd1=VORAXIS_EXE,
         opts1={},
         name2="Voraxis_Baseline",
@@ -156,13 +157,13 @@ def main():
         games=5,
         tc="5+0.1",
         concurrency=2,
-        pgn_name=f"voraxis_pvs_vs_baseline_{timestamp}.pgn",
+        pgn_name=f"voraxis_new_vs_baseline_{timestamp}.pgn",
     )
     suite_summary.append(res0)
 
     # 2. Voraxis vs Stockfish Level 3
     res1 = run_experiment_match(
-        name1="Voraxis_PVS",
+        name1="Voraxis_New",
         cmd1=VORAXIS_EXE,
         opts1={},
         name2="Stockfish_L3",
@@ -177,7 +178,7 @@ def main():
 
     # 3. Voraxis vs Stockfish Level 4
     res2 = run_experiment_match(
-        name1="Voraxis_PVS",
+        name1="Voraxis_New",
         cmd1=VORAXIS_EXE,
         opts1={},
         name2="Stockfish_L4",
