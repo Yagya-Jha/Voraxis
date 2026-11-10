@@ -17,10 +17,13 @@ constexpr int MG_QUEEN = 900, EG_QUEEN = 930;
 // Maximum phase weight (4N*1 + 4B*1 + 4R*2 + 2Q*4 = 24)
 constexpr int MAX_PHASE = 24;
 
+// Initialize evaluation bitboard masks (passed pawn, adjacent files, pawn support)
+void initEvaluation();
+
 // Continuous game phase calculation (24 = pure MG, 0 = pure EG)
 int getGamePhase(const Board& board);
 
-// Scores position from White's perspective with tapered evaluation
+// Scores position from White's perspective with tapered evaluation and pawn structure
 int evaluate(const Board& board);
 
 } // namespace Evaluate

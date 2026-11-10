@@ -146,6 +146,260 @@ static const int eg_king_table[64] = {
     -53, -34, -21, -11, -28, -14, -24, -43
 };
 
+// ============================================================================
+// Pawn Structure Lookup Masks & Tables (4.3)
+// ============================================================================
+static uint64_t fileMask[8];
+static uint64_t rankMask[8];
+static uint64_t adjacentFilesMask[8];
+static uint64_t passedPawnMask[2][64];
+static uint64_t pawnSupportMask[2][64];
+static uint64_t pawnStopAttackMask[2][64];
+static uint64_t ranksBehindAndEqual[2][8];
+static bool tablesInitialized = false;
+
+// Passed pawn rank bonuses (indexed by relative rank 0 to 7)
+constexpr int PASSED_PAWN_MG[8] = { 0, 0, 10, 15, 35, 70, 120, 0 };
+constexpr int PASSED_PAWN_EG[8] = { 0, 0, 15, 30, 60, 120, 200, 0 };
+
+// Phalanx rank bonuses (indexed by relative rank 0 to 7)
+constexpr int PHALANX_MG[8] = { 0, 0, 5, 12, 20, 35, 50, 0 };
+constexpr int PHALANX_EG[8] = { 0, 0, 5, 15, 25, 45, 60, 0 };
+
+void initEvaluation() {
+    if (tablesInitialized) return;
+
+    for (int f = 0; f < 8; ++f) {
+        fileMask[f] = 0x0101010101010101ULL << f;
+    }
+    for (int r = 0; r < 8; ++r) {
+        rankMask[r] = 0xFFULL << (r * 8);
+    }
+    for (int f = 0; f < 8; ++f) {
+        adjacentFilesMask[f] = ((f > 0) ? fileMask[f - 1] : 0ULL) | ((f < 7) ? fileMask[f + 1] : 0ULL);
+    }
+
+    for (int r = 0; r < 8; ++r) {
+        ranksBehindAndEqual[WHITE][r] = 0ULL;
+        for (int i = 0; i <= r; ++i) {
+            ranksBehindAndEqual[WHITE][r] |= rankMask[i];
+        }
+        ranksBehindAndEqual[BLACK][r] = 0ULL;
+        for (int i = r; i < 8; ++i) {
+            ranksBehindAndEqual[BLACK][r] |= rankMask[i];
+        }
+    }
+
+    for (int sq = 0; sq < 64; ++sq) {
+        int f = sq % 8;
+        int r = sq / 8;
+
+        // Passed pawn masks (ahead on same and adjacent files)
+        passedPawnMask[WHITE][sq] = 0ULL;
+        for (int r_ahead = r + 1; r_ahead < 8; ++r_ahead) {
+            passedPawnMask[WHITE][sq] |= (1ULL << (r_ahead * 8 + f));
+            if (f > 0) passedPawnMask[WHITE][sq] |= (1ULL << (r_ahead * 8 + f - 1));
+            if (f < 7) passedPawnMask[WHITE][sq] |= (1ULL << (r_ahead * 8 + f + 1));
+        }
+
+        passedPawnMask[BLACK][sq] = 0ULL;
+        for (int r_ahead = r - 1; r_ahead >= 0; --r_ahead) {
+            passedPawnMask[BLACK][sq] |= (1ULL << (r_ahead * 8 + f));
+            if (f > 0) passedPawnMask[BLACK][sq] |= (1ULL << (r_ahead * 8 + f - 1));
+            if (f < 7) passedPawnMask[BLACK][sq] |= (1ULL << (r_ahead * 8 + f + 1));
+        }
+
+        // Pawn support masks (squares from which friendly pawns can protect sq)
+        pawnSupportMask[WHITE][sq] = 0ULL;
+        if (r > 0) {
+            if (f > 0) pawnSupportMask[WHITE][sq] |= (1ULL << ((r - 1) * 8 + f - 1));
+            if (f < 7) pawnSupportMask[WHITE][sq] |= (1ULL << ((r - 1) * 8 + f + 1));
+        }
+
+        pawnSupportMask[BLACK][sq] = 0ULL;
+        if (r < 7) {
+            if (f > 0) pawnSupportMask[BLACK][sq] |= (1ULL << ((r + 1) * 8 + f - 1));
+            if (f < 7) pawnSupportMask[BLACK][sq] |= (1ULL << ((r + 1) * 8 + f + 1));
+        }
+
+        // Backward pawn stop attack mask (enemy pawns controlling the stop square in front of sq)
+        pawnStopAttackMask[WHITE][sq] = 0ULL;
+        if (r + 1 < 8) {
+            int stop = (r + 1) * 8 + f;
+            int stop_r = stop / 8;
+            int stop_f = stop % 8;
+            if (stop_r + 1 < 8) {
+                if (stop_f > 0) pawnStopAttackMask[WHITE][sq] |= (1ULL << ((stop_r + 1) * 8 + stop_f - 1));
+                if (stop_f < 7) pawnStopAttackMask[WHITE][sq] |= (1ULL << ((stop_r + 1) * 8 + stop_f + 1));
+            }
+        }
+
+        pawnStopAttackMask[BLACK][sq] = 0ULL;
+        if (r - 1 >= 0) {
+            int stop = (r - 1) * 8 + f;
+            int stop_r = stop / 8;
+            int stop_f = stop % 8;
+            if (stop_r - 1 >= 0) {
+                if (stop_f > 0) pawnStopAttackMask[BLACK][sq] |= (1ULL << ((stop_r - 1) * 8 + stop_f - 1));
+                if (stop_f < 7) pawnStopAttackMask[BLACK][sq] |= (1ULL << ((stop_r - 1) * 8 + stop_f + 1));
+            }
+        }
+    }
+
+    tablesInitialized = true;
+}
+
+// 4.3 Pawn Structure Evaluation: Doubled, Isolated, Backward, Passed & Connected
+void evaluatePawnStructure(const Board& board, int& mgScore, int& egScore) {
+    uint64_t wPawns = board.pieceBB[W_PAWN];
+    uint64_t bPawns = board.pieceBB[B_PAWN];
+
+    // 1. Doubled Pawns (evaluated per file)
+    for (int f = 0; f < 8; ++f) {
+        int wCount = __builtin_popcountll(wPawns & fileMask[f]);
+        if (wCount > 1) {
+            mgScore -= (wCount - 1) * 15;
+            egScore -= (wCount - 1) * 25;
+        }
+        int bCount = __builtin_popcountll(bPawns & fileMask[f]);
+        if (bCount > 1) {
+            mgScore += (bCount - 1) * 15;
+            egScore += (bCount - 1) * 25;
+        }
+    }
+
+    // 2. White Pawns: Isolated, Backward, Passed, Connected
+    uint64_t wPawnsCopy = wPawns;
+    uint64_t wPassedPawns = 0ULL;
+    while (wPawnsCopy) {
+        int sq = __builtin_ctzll(wPawnsCopy);
+        wPawnsCopy &= wPawnsCopy - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+
+        // Isolated pawn (no friendly pawns on adjacent files)
+        if ((wPawns & adjacentFilesMask[f]) == 0) {
+            bool openFile = (bPawns & fileMask[f]) == 0;
+            mgScore -= openFile ? 20 : 15;
+            egScore -= openFile ? 25 : 20;
+        }
+        // Backward pawn (not isolated, lagging behind neighbors, stop square attacked by enemy)
+        else if ((wPawns & adjacentFilesMask[f] & ranksBehindAndEqual[WHITE][r]) == 0) {
+            if (bPawns & pawnStopAttackMask[WHITE][sq]) {
+                mgScore -= 14;
+                egScore -= 18;
+            }
+        }
+
+        // Passed pawn (no enemy pawns ahead on same or adjacent files)
+        if ((bPawns & passedPawnMask[WHITE][sq]) == 0) {
+            wPassedPawns |= (1ULL << sq);
+            mgScore += PASSED_PAWN_MG[r];
+            egScore += PASSED_PAWN_EG[r];
+
+            // Protected passed pawn bonus
+            if (wPawns & pawnSupportMask[WHITE][sq]) {
+                mgScore += 15;
+                egScore += 25;
+            }
+        } else {
+            // Connected non-passed pawn bonus
+            if (wPawns & pawnSupportMask[WHITE][sq]) {
+                mgScore += 8;
+                egScore += 12;
+            }
+        }
+    }
+
+    // Connected passed pawns bonus (White)
+    uint64_t wPassCopy = wPassedPawns;
+    while (wPassCopy) {
+        int sq = __builtin_ctzll(wPassCopy);
+        wPassCopy &= wPassCopy - 1;
+        int f = sq % 8;
+        if (wPassedPawns & adjacentFilesMask[f]) {
+            mgScore += 15;
+            egScore += 30;
+        }
+    }
+
+    // 3. Black Pawns: Isolated, Backward, Passed, Connected
+    uint64_t bPawnsCopy = bPawns;
+    uint64_t bPassedPawns = 0ULL;
+    while (bPawnsCopy) {
+        int sq = __builtin_ctzll(bPawnsCopy);
+        bPawnsCopy &= bPawnsCopy - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+        int relRank = 7 - r;
+
+        // Isolated pawn
+        if ((bPawns & adjacentFilesMask[f]) == 0) {
+            bool openFile = (wPawns & fileMask[f]) == 0;
+            mgScore += openFile ? 20 : 15;
+            egScore += openFile ? 25 : 20;
+        }
+        // Backward pawn
+        else if ((bPawns & adjacentFilesMask[f] & ranksBehindAndEqual[BLACK][r]) == 0) {
+            if (wPawns & pawnStopAttackMask[BLACK][sq]) {
+                mgScore += 14;
+                egScore += 18;
+            }
+        }
+
+        // Passed pawn
+        if ((wPawns & passedPawnMask[BLACK][sq]) == 0) {
+            bPassedPawns |= (1ULL << sq);
+            mgScore -= PASSED_PAWN_MG[relRank];
+            egScore -= PASSED_PAWN_EG[relRank];
+
+            // Protected passed pawn bonus
+            if (bPawns & pawnSupportMask[BLACK][sq]) {
+                mgScore -= 15;
+                egScore -= 25;
+            }
+        } else {
+            // Connected non-passed pawn bonus
+            if (bPawns & pawnSupportMask[BLACK][sq]) {
+                mgScore -= 8;
+                egScore -= 12;
+            }
+        }
+    }
+
+    // Connected passed pawns bonus (Black)
+    uint64_t bPassCopy = bPassedPawns;
+    while (bPassCopy) {
+        int sq = __builtin_ctzll(bPassCopy);
+        bPassCopy &= bPassCopy - 1;
+        int f = sq % 8;
+        if (bPassedPawns & adjacentFilesMask[f]) {
+            mgScore -= 15;
+            egScore -= 30;
+        }
+    }
+
+    // 4. Pawn Phalanxes (pawns side-by-side on adjacent files on the same rank)
+    uint64_t wPhalanxes = wPawns & ((wPawns & ~fileMask[7]) << 1);
+    while (wPhalanxes) {
+        int sq = __builtin_ctzll(wPhalanxes);
+        wPhalanxes &= wPhalanxes - 1;
+        int r = sq / 8;
+        mgScore += PHALANX_MG[r];
+        egScore += PHALANX_EG[r];
+    }
+
+    uint64_t bPhalanxes = bPawns & ((bPawns & ~fileMask[7]) << 1);
+    while (bPhalanxes) {
+        int sq = __builtin_ctzll(bPhalanxes);
+        bPhalanxes &= bPhalanxes - 1;
+        int r = sq / 8;
+        int relRank = 7 - r;
+        mgScore -= PHALANX_MG[relRank];
+        egScore -= PHALANX_EG[relRank];
+    }
+}
+
 int getGamePhase(const Board& board) {
     int phase = 0;
     phase += __builtin_popcountll(board.pieceBB[W_KNIGHT] | board.pieceBB[B_KNIGHT]) * 1;
@@ -156,6 +410,10 @@ int getGamePhase(const Board& board) {
 }
 
 int evaluate(const Board& board) {
+    if (!tablesInitialized) {
+        initEvaluation();
+    }
+
     int mgScore = 0;
     int egScore = 0;
 
@@ -258,7 +516,12 @@ int evaluate(const Board& board) {
     }
 
     // ------------------------------------------------------------------------
-    // Tapered Interpolation by Game Phase
+    // 4.3 Pawn Structure Evaluation
+    // ------------------------------------------------------------------------
+    evaluatePawnStructure(board, mgScore, egScore);
+
+    // ------------------------------------------------------------------------
+    // Tapered Interpolation by Game Phase (4.2)
     // ------------------------------------------------------------------------
     int phase = getGamePhase(board);
     int score = (mgScore * phase + egScore * (MAX_PHASE - phase)) / MAX_PHASE;

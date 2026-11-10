@@ -132,12 +132,12 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Continuous game phase transition (Opening/Middlegame -> Endgame).
     [x] Separate MG and EG piece square tables interpolated by game phase.
 
-[ ] 4.3 Pawn Structure Evaluation
-    - Doubled pawns penalty.
-    - Isolated pawns penalty.
-    - Backward pawns penalty.
-    - Passed pawns bonus (scaled by advancement and protected status).
-    - Connected pawns and pawn phalanxes.
+[x] 4.3 Pawn Structure Evaluation (COMPLETED)
+    [x] Doubled pawns penalty.
+    [x] Isolated pawns penalty.
+    [x] Backward pawns penalty.
+    [x] Passed pawns bonus (scaled by advancement and protected status).
+    [x] Connected pawns and pawn phalanxes.
 
 [ ] 4.4 Piece Activity & Coordination
     - Bishop pair bonus.

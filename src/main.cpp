@@ -2,6 +2,7 @@
 #include <string>
 #include "board.h"
 #include "movegen.h"
+#include "evaluate.h"
 #include "book.h"
 #include "syzygy_bridge.h"
 #include "uci.h"
@@ -9,6 +10,7 @@
 int main(int argc, char* argv[]) {
     // Initialize lookup tables and zobrist keys
     Voraxis::Movegen::initAttackTables();
+    Voraxis::Evaluate::initEvaluation();
     Voraxis::Board::initZobrist();
     Voraxis::Book::init("books/komodo.bin");
 
