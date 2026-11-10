@@ -839,6 +839,72 @@ void evaluateKingSafety(const Board& board, int& mgScore, int& egScore) {
     }
 }
 
+// 4.6 Endgame Specific Knowledge: King Centralization towards Passed Pawns & Mop-Up
+void evaluateEndgame(const Board& board, int& mgScore, int& egScore) {
+    if (!board.pieceBB[W_KING] || !board.pieceBB[B_KING]) return;
+
+    int wKingSq = __builtin_ctzll(board.pieceBB[W_KING]);
+    int bKingSq = __builtin_ctzll(board.pieceBB[B_KING]);
+    int wFile = wKingSq % 8, wRank = wKingSq / 8;
+    int bFile = bKingSq % 8, bRank = bKingSq / 8;
+
+    uint64_t wPawns = board.pieceBB[W_PAWN];
+    uint64_t bPawns = board.pieceBB[B_PAWN];
+
+    // 1. King Centralization Towards Passed Pawns
+    uint64_t wPawnsCopy = wPawns;
+    while (wPawnsCopy) {
+        int sq = __builtin_ctzll(wPawnsCopy);
+        wPawnsCopy &= wPawnsCopy - 1;
+        if ((bPawns & passedPawnMask[WHITE][sq]) == 0) {
+            int f = sq % 8, r = sq / 8;
+            int wKingDist = std::max(std::abs(wFile - f), std::abs(wRank - r));
+            int wKingPromDist = std::max(std::abs(wFile - f), std::abs(wRank - 7));
+            int bKingPromDist = std::max(std::abs(bFile - f), std::abs(bRank - 7));
+
+            egScore += (7 - wKingDist) * 4 + (7 - wKingPromDist) * 5;
+            egScore += bKingPromDist * 4;
+        }
+    }
+
+    uint64_t bPawnsCopy = bPawns;
+    while (bPawnsCopy) {
+        int sq = __builtin_ctzll(bPawnsCopy);
+        bPawnsCopy &= bPawnsCopy - 1;
+        if ((wPawns & passedPawnMask[BLACK][sq]) == 0) {
+            int f = sq % 8, r = sq / 8;
+            int bKingDist = std::max(std::abs(bFile - f), std::abs(bRank - r));
+            int bKingPromDist = std::max(std::abs(bFile - f), std::abs(bRank - 0));
+            int wKingPromDist = std::max(std::abs(wFile - f), std::abs(wRank - 0));
+
+            egScore -= (7 - bKingDist) * 4 + (7 - bKingPromDist) * 5;
+            egScore -= wKingPromDist * 4;
+        }
+    }
+
+    // 2. Mop-Up Evaluation: Cornering Lone King in K+Q vs K, K+R vs K, etc.
+    int phase = getGamePhase(board);
+    if (phase <= 6) {
+        int wMajorMinor = __builtin_popcountll(board.pieceBB[W_KNIGHT] | board.pieceBB[W_BISHOP] |
+                                              board.pieceBB[W_ROOK]   | board.pieceBB[W_QUEEN]);
+        int bMajorMinor = __builtin_popcountll(board.pieceBB[B_KNIGHT] | board.pieceBB[B_BISHOP] |
+                                              board.pieceBB[B_ROOK]   | board.pieceBB[B_QUEEN]);
+
+        // White has decisive material advantage vs lone king / minimal black material
+        if (wMajorMinor >= 1 && bMajorMinor == 0 && egScore > 200) {
+            int bCenterDist = std::max(3 - bFile, bFile - 4) + std::max(3 - bRank, bRank - 4);
+            int kingProximity = 14 - (std::abs(wFile - bFile) + std::abs(wRank - bRank));
+            egScore += (bCenterDist * 12) + (kingProximity * 6);
+        }
+        // Black has decisive material advantage vs lone king
+        else if (bMajorMinor >= 1 && wMajorMinor == 0 && egScore < -200) {
+            int wCenterDist = std::max(3 - wFile, wFile - 4) + std::max(3 - wRank, wRank - 4);
+            int kingProximity = 14 - (std::abs(wFile - bFile) + std::abs(wRank - bRank));
+            egScore -= (wCenterDist * 12) + (kingProximity * 6);
+        }
+    }
+}
+
 int getGamePhase(const Board& board) {
     int phase = 0;
     phase += __builtin_popcountll(board.pieceBB[W_KNIGHT] | board.pieceBB[B_KNIGHT]) * 1;
@@ -968,6 +1034,11 @@ int evaluate(const Board& board) {
     // 4.5 King Safety Evaluation
     // ------------------------------------------------------------------------
     evaluateKingSafety(board, mgScore, egScore);
+
+    // ------------------------------------------------------------------------
+    // 4.6 Endgame Specific Knowledge (King Escort & Mop-Up)
+    // ------------------------------------------------------------------------
+    evaluateEndgame(board, mgScore, egScore);
 
     // ------------------------------------------------------------------------
     // Tapered Interpolation by Game Phase (4.2)
