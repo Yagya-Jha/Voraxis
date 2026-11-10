@@ -120,6 +120,9 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
         if (completedMoveFound) {
             bestMove = currentIterBestMove;
             storeTT(board.zobristKey, currDepth, alpha, TT_EXACT, bestMove, 0);
+            long long elapsed = limits.startTime > 0 ? (nowMs() - limits.startTime) : 0;
+            std::cout << "info depth " << currDepth << " score cp " << alpha << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
+            std::cout.flush();
         }
 
         // Re-sort root moves using updated TT move and history heuristics
@@ -240,7 +243,7 @@ int scoreMove(const Move move, int ply) {
     return scoreMove(move, ply, Move());
 }
 
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply) {
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull) {
     searchedNodes++;
     checkTime(limits);
     if (stopSearch) {
@@ -265,6 +268,28 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
             }
             if (entry->flag == TT_UPPERBOUND && ttScore <= alpha) {
                 return ttScore;
+            }
+        }
+    }
+
+    // Null Move Pruning (NMP)
+    if (allowNull && depth >= 3 && ply > 0 && !Movegen::inCheck(board, board.getSideToMove())) {
+        if (board.hasNonPawnMaterial(board.getSideToMove())) {
+            int staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
+            if (staticEval >= beta) {
+                int R = (depth >= 6) ? 3 : 2;
+
+                board.makeNullMove();
+                int score = -negamax(board, depth - 1 - R, -beta, -beta + 1, limits, ply + 1, false);
+                board.undoNullMove();
+
+                if (stopSearch) {
+                    return 0;
+                }
+
+                if (score >= beta) {
+                    return beta;
+                }
             }
         }
     }

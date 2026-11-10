@@ -113,6 +113,10 @@ public:
     void applyMove(const Move& move);
     void undoMove(const Move& move);
 
+    void makeNullMove();
+    void undoNullMove();
+    bool hasNonPawnMaterial(int color) const;
+
     bool isFiftyMoveDraw() const { return halfmoveClock >= 100; }
     bool isThreefoldRepetition() const;
     bool isRepetition(int ply = 0) const;

@@ -439,6 +439,43 @@ void Board::undoMove(const Move& move) {
     zobristKey = undo.zobristKey;
 }
 
+void Board::makeNullMove() {
+    UndoInfo undo;
+    undo.move = Move();
+    undo.capturedPiece = NO_PIECE;
+    undo.castlingRights = castlingRights;
+    undo.epSquare = epSquare;
+    undo.halfmoveClock = halfmoveClock;
+    undo.zobristKey = zobristKey;
+    history.push_back(undo);
+
+    epSquare = SQ_NONE;
+    sideToMove ^= 1;
+    zobristKey = computeZobrist();
+    repetitionHistory.push_back(zobristKey);
+}
+
+void Board::undoNullMove() {
+    if (history.empty()) return;
+    const UndoInfo undo = history.back();
+    history.pop_back();
+    repetitionHistory.pop_back();
+
+    sideToMove ^= 1;
+    epSquare = undo.epSquare;
+    castlingRights = undo.castlingRights;
+    halfmoveClock = undo.halfmoveClock;
+    zobristKey = undo.zobristKey;
+}
+
+bool Board::hasNonPawnMaterial(int color) const {
+    if (color == WHITE) {
+        return (pieceBB[W_KNIGHT] | pieceBB[W_BISHOP] | pieceBB[W_ROOK] | pieceBB[W_QUEEN]) != 0ULL;
+    } else {
+        return (pieceBB[B_KNIGHT] | pieceBB[B_BISHOP] | pieceBB[B_ROOK] | pieceBB[B_QUEEN]) != 0ULL;
+    }
+}
+
 bool Board::isRepetition(int ply) const {
     int count = 0;
     for (uint64_t key : repetitionHistory) {

@@ -47,9 +47,9 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     - Search quiet moves late in the move list at reduced depth.
     - Re-search at full depth if they exceed alpha.
 
-[ ] 1.10 Null Move Pruning
-    - Pass turn to verify if opponent can still not breach beta.
-    - Guard against zugzwang in late endgame.
+[x] 1.10 Null Move Pruning (COMPLETED)
+    [x] Pass turn to verify if opponent can still not breach beta.
+    [x] Guard against zugzwang in late endgame.
 
 [ ] 1.11 Futility Pruning
     - Prune hopeless quiet moves near leaf nodes if eval + margin < alpha.
