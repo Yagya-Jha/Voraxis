@@ -4,6 +4,7 @@
 #include "movegen.h"
 #include "book.h"
 #include "syzygy_bridge.h"
+#include "threadpool.h"
 #include "uci.h"
 
 int main(int argc, char* argv[]) {
@@ -11,6 +12,7 @@ int main(int argc, char* argv[]) {
     Voraxis::Movegen::initAttackTables();
     Voraxis::Board::initZobrist();
     Voraxis::Book::init("books/komodo.bin");
+    Voraxis::ThreadPool::init(1);
 
     // Initialize Syzygy tablebases if available
     if (!Voraxis::Syzygy::init("books/syzygy")) {
@@ -22,12 +24,14 @@ int main(int argc, char* argv[]) {
         std::string arg = argv[1];
         if (arg == "test" || arg == "--test") {
             bool passed = Voraxis::Movegen::runPerftSuite();
+            Voraxis::ThreadPool::cleanup();
             return passed ? 0 : 1;
         } else if (arg == "perft" && argc > 2) {
             int depth = std::stoi(argv[2]);
             Voraxis::Board board;
             uint64_t nodes = Voraxis::Movegen::perft(board, depth);
             std::cout << "Perft(" << depth << ") = " << nodes << "\n";
+            Voraxis::ThreadPool::cleanup();
             return 0;
         }
     }
@@ -35,7 +39,6 @@ int main(int argc, char* argv[]) {
     // Start UCI command loop
     Voraxis::UCI::loop();
 
+    Voraxis::ThreadPool::cleanup();
     return 0;
 }
-
-//g++ -O3 -std=c++17 src/main.cpp src/board.cpp src/movegen.cpp src/evaluate.cpp src/search.cpp src/uci.cpp -o build/voraxis.exeg++ -O3 -std=c++17 src/main.cpp src/board.cpp src/movegen.cpp src/evaluate.cpp src/search.cpp src/uci.cpp -o build/voraxis.exe

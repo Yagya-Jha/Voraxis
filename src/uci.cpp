@@ -1,6 +1,7 @@
 #include "uci.h"
 #include "movegen.h"
 #include "search.h"
+#include "threadpool.h"
 #include "book.h"
 #include "syzygy_bridge.h"
 #include <iostream>
@@ -106,6 +107,7 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
         } else if (lowerName == "threads") {
             try {
                 options.threads = std::max(1, std::min(128, std::stoi(optValue)));
+                ThreadPool::setThreadCount(options.threads);
             } catch (...) {}
         } else if (lowerName == "move overhead") {
             try {
@@ -131,7 +133,7 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
     } else if (command == "position") {
         parsePosition(iss, board);
     } else if (command == "stop") {
-        Search::stopSearch = true;
+        ThreadPool::stop();
     } else if (command == "go") {
         Search::SearchLimits limits;
         int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = -1, movetime = -1, depth = -1;

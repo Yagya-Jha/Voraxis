@@ -235,6 +235,9 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 11. MULTITHREADING (LAZY SMP)
 ================================================================================
 
-[ ] 11.1 Lazy SMP Multi-core Search
-    - Worker threads searching the tree with shared Transposition Table.
-    - Thread pool management, clean start/stop synchronization.
+[x] 11.1 Lazy SMP Multi-core Search (COMPLETED)
+    [x] Worker threads searching the tree with shared Transposition Table.
+    [x] Lockless XOR checksum TT entry protection preventing torn reads across threads.
+    [x] Thread pool management with native Windows events for low-latency synchronization.
+    [x] Depth jitter on helper threads to diversify search branches.
+    [x] Aggregated node count and seldepth reporting in UCI search info streaming.

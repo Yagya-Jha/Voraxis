@@ -6,6 +6,8 @@
 #include <chrono>
 #include <vector>
 #include <cstdint>
+#include <atomic>
+#include <memory>
 
 namespace Voraxis {
 namespace Search {
@@ -39,13 +41,9 @@ constexpr int MATE_SCORE = 1000000;
 constexpr int MATE_THRESHOLD = 900000;
 constexpr size_t TT_ENTRIES = 1048576; // 1,048,576 entries (~40MB)
 
-// Global search state and heuristics
-extern bool stopSearch;
-extern long long searchedNodes;
-extern int seldepth;
-extern int historyTable[12][64];
-extern Move killerMoves[64][2];
-extern Move counterMoveTable[64][64];
+// Global search state
+extern std::atomic<bool> stopSearch;
+extern size_t ttMask;
 extern std::vector<TTEntry> ttTable;
 
 // Time and limits utilities
@@ -62,16 +60,36 @@ void setTTSize(size_t mbSize);
 int getHashFull();
 std::vector<Move> extractPV(Board board, int depth);
 
+// Search Worker Context (Per-thread search instance)
+struct SearchWorker {
+    int threadId = 0;
+    Board board;
+    SearchLimits limits;
+    long long searchedNodes = 0;
+    int seldepth = 0;
+    int historyTable[12][64];
+    Move killerMoves[64][2];
+    Move counterMoveTable[64][64];
+    Move bestMove;
+    int bestScore = 0;
+
+    SearchWorker(int id = 0);
+    void reset();
+
+    Move searchRoot(bool isMainThread);
+    int negamax(int depth, int alpha, int beta, int ply, bool allowNull, Move excludedMove, Move prevMove);
+    int quiescence(int alpha, int beta, int ply);
+    int scoreMove(const Move& move, int ply, const Move& ttMove, const Move& prevMove);
+    std::vector<Move> returnSortedMoves(int ply, const Move& prevMove);
+};
+
 // Move scoring and ordering
 int getPieceValue(int pType);
-int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove, const Move& prevMove = Move());
-int scoreMove(const Board& board, const Move move, int ply = 0);
-std::vector<Move> returnSortedMoves(Board& board, int ply = 0, const Move& prevMove = Move());
+bool isPseudoLegal(const Board& b, const Move& m);
+bool isLegalMove(Board& b, const Move& m);
 
-// Search algorithms
+// Helper for standalone search
 Move getBestMove(Board& board, const SearchLimits& limits = SearchLimits());
-int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, int ply = 0);
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0, bool allowNull = true, Move excludedMove = Move(), Move prevMove = Move());
 
 } // namespace Search
 } // namespace Voraxis
