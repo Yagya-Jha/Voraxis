@@ -96,10 +96,25 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
         Move currentIterBestMove = legalMoves[0];
         bool completedMoveFound = false;
 
+        int movesSearched = 0;
         for (Move move : legalMoves) {
             board.applyMove(move);
-            int score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
+            int score = 0;
+
+            if (movesSearched == 0) {
+                // First move searched with full window
+                score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
+            } else {
+                // Subsequent moves searched with null window
+                score = -negamax(board, currDepth - 1, -alpha - 1, -alpha, limits, 1);
+                // Re-search with full window if failed high
+                if (score > alpha && score < beta) {
+                    score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
+                }
+            }
+
             board.undoMove(move);
+            movesSearched++;
 
             if (stopSearch) {
                 break;
@@ -310,11 +325,26 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
 
     int originalAlpha = alpha;
     Move bestMove;
+    int movesSearched = 0;
 
     for (Move move : legalMoves) {
         board.applyMove(move);
-        int score = -negamax(board, depth - 1, -beta, -alpha, limits, ply + 1);
+        int score = 0;
+
+        if (movesSearched == 0) {
+            // First move searched with full window
+            score = -negamax(board, depth - 1, -beta, -alpha, limits, ply + 1);
+        } else {
+            // Subsequent moves searched with zero / null window
+            score = -negamax(board, depth - 1, -alpha - 1, -alpha, limits, ply + 1);
+            // Re-search with full window if failed high
+            if (score > alpha && score < beta) {
+                score = -negamax(board, depth - 1, -beta, -alpha, limits, ply + 1);
+            }
+        }
+
         board.undoMove(move);
+        movesSearched++;
 
         if (stopSearch) {
             return 0;

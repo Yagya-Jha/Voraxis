@@ -26,10 +26,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Retain the best move from the last completed iteration.
     [x] Allow search to stop safely when time or node limits expire.
 
-[ ] 1.5 Principal Variation Search (PVS)
-    - Search first move with full alpha-beta window [alpha, beta].
-    - Search subsequent moves with null/zero window [alpha, alpha+1].
-    - Re-search with full window only if a move proves superior.
+[x] 1.5 Principal Variation Search (PVS) (COMPLETED)
+    [x] Search first move with full alpha-beta window [alpha, beta].
+    [x] Search subsequent moves with null/zero window [alpha, alpha+1].
+    [x] Re-search with full window only if a move proves superior.
 
 [x] 1.6 Quiescence Search (COMPLETED)
     [x] Search beyond nominal horizon for tactical stability (captures, promotions).
