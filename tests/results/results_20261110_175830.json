@@ -1,0 +1,74 @@
+{
+  "timestamp": "20261110_175908",
+  "voraxis_name": "Voraxis",
+  "stockfish_name": "Stockfish",
+  "total_games": 5,
+  "parallel": 2,
+  "time_control": "5+0.1",
+  "voraxis_wins": 4,
+  "voraxis_losses": 1,
+  "voraxis_draws": 0,
+  "failed_games": 0,
+  "score_percentage": 80.0,
+  "voraxis_as_white": {
+    "wins": 3,
+    "losses": 0,
+    "draws": 0,
+    "failed": 0
+  },
+  "voraxis_as_black": {
+    "wins": 1,
+    "losses": 1,
+    "draws": 0,
+    "failed": 0
+  },
+  "pgn_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\pgns\\pgn_20261110_175830.pgn",
+  "results_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\results\\results_20261110_175830.json",
+  "games": [
+    {
+      "game_number": 1,
+      "white": "Voraxis",
+      "black": "Stockfish",
+      "result": "1-0",
+      "reason": "White mates",
+      "voraxis_color": "white",
+      "voraxis_outcome": "win"
+    },
+    {
+      "game_number": 3,
+      "white": "Voraxis",
+      "black": "Stockfish",
+      "result": "1-0",
+      "reason": "White mates",
+      "voraxis_color": "white",
+      "voraxis_outcome": "win"
+    },
+    {
+      "game_number": 2,
+      "white": "Stockfish",
+      "black": "Voraxis",
+      "result": "0-1",
+      "reason": "Black mates",
+      "voraxis_color": "black",
+      "voraxis_outcome": "win"
+    },
+    {
+      "game_number": 4,
+      "white": "Stockfish",
+      "black": "Voraxis",
+      "result": "1-0",
+      "reason": "White mates",
+      "voraxis_color": "black",
+      "voraxis_outcome": "loss"
+    },
+    {
+      "game_number": 5,
+      "white": "Voraxis",
+      "black": "Stockfish",
+      "result": "1-0",
+      "reason": "White mates",
+      "voraxis_color": "white",
+      "voraxis_outcome": "win"
+    }
+  ]
+}
