@@ -145,9 +145,9 @@ def main():
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     suite_summary = []
 
-    # 1. Voraxis (New with TT) vs Voraxis (Baseline without TT)
+    # 1. Voraxis (with PVS + NMP + TT) vs Voraxis (Baseline)
     res0 = run_experiment_match(
-        name1="Voraxis_TT",
+        name1="Voraxis_PVS",
         cmd1=VORAXIS_EXE,
         opts1={},
         name2="Voraxis_Baseline",
@@ -156,54 +156,39 @@ def main():
         games=5,
         tc="5+0.1",
         concurrency=2,
-        pgn_name=f"voraxis_tt_vs_baseline_{timestamp}.pgn",
+        pgn_name=f"voraxis_pvs_vs_baseline_{timestamp}.pgn",
     )
     suite_summary.append(res0)
 
-    # 2. Voraxis vs Stockfish Level 0
+    # 2. Voraxis vs Stockfish Level 3
     res1 = run_experiment_match(
-        name1="Voraxis_TT",
+        name1="Voraxis_PVS",
         cmd1=VORAXIS_EXE,
         opts1={},
-        name2="Stockfish_L0",
+        name2="Stockfish_L3",
         cmd2=STOCKFISH_EXE,
-        opts2={"Skill Level": "0"},
+        opts2={"Skill Level": "3"},
         games=5,
         tc="5+0.1",
         concurrency=2,
-        pgn_name=f"voraxis_vs_sf_lvl0_{timestamp}.pgn",
+        pgn_name=f"voraxis_vs_sf_lvl3_{timestamp}.pgn",
     )
     suite_summary.append(res1)
 
-    # 3. Voraxis vs Stockfish Level 1
+    # 3. Voraxis vs Stockfish Level 4
     res2 = run_experiment_match(
-        name1="Voraxis_TT",
+        name1="Voraxis_PVS",
         cmd1=VORAXIS_EXE,
         opts1={},
-        name2="Stockfish_L1",
+        name2="Stockfish_L4",
         cmd2=STOCKFISH_EXE,
-        opts2={"Skill Level": "1"},
+        opts2={"Skill Level": "4"},
         games=5,
         tc="5+0.1",
         concurrency=2,
-        pgn_name=f"voraxis_vs_sf_lvl1_{timestamp}.pgn",
+        pgn_name=f"voraxis_vs_sf_lvl4_{timestamp}.pgn",
     )
     suite_summary.append(res2)
-
-    # 4. Voraxis vs Stockfish Level 2
-    res3 = run_experiment_match(
-        name1="Voraxis_TT",
-        cmd1=VORAXIS_EXE,
-        opts1={},
-        name2="Stockfish_L2",
-        cmd2=STOCKFISH_EXE,
-        opts2={"Skill Level": "2"},
-        games=5,
-        tc="5+0.1",
-        concurrency=2,
-        pgn_name=f"voraxis_vs_sf_lvl2_{timestamp}.pgn",
-    )
-    suite_summary.append(res3)
 
     print("\n" + "#" * 65)
     print("                      FULL TOURNAMENT REPORT                    ")

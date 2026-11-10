@@ -1,0 +1,169 @@
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "1"]
+[White "Voraxis_PVS"]
+[Black "Voraxis_Baseline"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:13"]
+[GameEndTime "2026-11-10T20:28:26.766 India Standard Time"]
+[GameStartTime "2026-11-10T20:28:13.135 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "82"]
+[TimeControl "5+0.1"]
+
+1. Nf3 {0.00/6 0.26s} Nf6 2. Nc3 {+0.20/7 0.22s} Nc6 3. e4 {+0.20/6 0.25s} d5
+4. exd5 {+0.35/7 0.23s} Nxd5 5. Nxd5 {+0.15/6 0.20s} Qxd5 6. d4 {+0.20/5 0.23s}
+Bg4 7. Be2 {+0.10/4 0.22s} e5 8. dxe5 {+0.05/4 0.26s} Bxf3
+9. Bxf3 {+0.05/5 0.14s} Qxe5+ 10. Kf1 {0.00/6 0.14s} Bc5
+11. Bxc6+ {0.00/5 0.21s} bxc6 12. Qf3 {+0.15/5 0.14s} O-O-O
+13. Qh3+ {0.00/4 0.11s} Rd7 14. Qf3 {-0.15/4 0.21s} Re8 15. g4 {-0.25/5 0.13s}
+Qd5 16. Qxd5 {-0.35/6 0.12s} cxd5 17. Bg5 {-0.40/6 0.20s} h6
+18. Bd2 {-0.40/5 0.19s} Rde7 19. Re1 {-0.45/6 0.12s} Rxe1+
+20. Bxe1 {-0.60/7 0.13s} Bd4 21. Bc3 {-0.45/6 0.19s} Bxc3
+22. bxc3 {-1.30/8 0.097s} Re4 23. g5 {-1.40/8 0.10s} hxg5
+24. Rg1 {-2.05/7 0.092s} f6 25. Kg2 {-2.10/8 0.17s} Rc4 26. Rd1 {-2.05/8 0.10s}
+Rxc3 27. Rxd5 {-2.10/8 0.11s} Rxc2 28. a3 {-2.05/7 0.18s} Rb2
+29. h3 {-2.00/7 0.14s} Re2 30. Kg3 {-2.00/7 0.11s} Rc2 31. Kg2 {-2.00/7 0.17s}
+Rb2 32. Rd4 {-2.00/7 0.16s} Re2 33. Kf1 {-2.00/7 0.17s} Rc2
+34. Kg2 {-2.00/7 0.17s} f5 35. Rd5 {-2.00/7 0.16s} g6 36. Re5 {-1.90/7 0.11s}
+Kb7 37. Re6 {-1.90/7 0.096s} Rc6 38. Re3 {-1.05/7 0.14s} Rc5
+39. Re6 {-1.05/8 0.089s} Rc6 40. Re3 {0.00/12 0.094s} Rc5
+41. Re6 {0.00/13 0.11s} Rc6 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "2"]
+[White "Voraxis_Baseline"]
+[Black "Voraxis_PVS"]
+[Result "0-1"]
+[ECO "A05"]
+[GameDuration "00:00:14"]
+[GameEndTime "2026-11-10T20:28:28.079 India Standard Time"]
+[GameStartTime "2026-11-10T20:28:13.167 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "92"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 {0.00/7 0.26s} 2. Nc3 d5 {-0.20/6 0.27s} 3. d4 Bf5 {0.00/5 0.25s}
+4. Bf4 Nc6 {-0.10/5 0.14s} 5. e3 e6 {-0.15/5 0.17s} 6. Bb5 Bd6 {-0.25/5 0.22s}
+7. Ne5 Bxe5 {-0.20/5 0.11s} 8. Bxc6+ bxc6 {-0.20/6 0.13s} 9. dxe5
+Ne4 {-0.20/5 0.23s} 10. Nxe4 dxe4 {-0.20/5 0.22s} 11. Qd4 Qd5 {-0.20/6 0.16s}
+12. O-O-O Qxa2 {-0.15/6 0.19s} 13. Qd7+ Kf8 {-0.10/7 0.12s} 14. Qd8+
+Rxd8 {+2.35/10 0.18s} 15. Rxd8+ Ke7 {+2.35/8 0.20s} 16. Bg5+ f6 {+5.80/8 0.11s}
+17. exf6+ gxf6 {+5.95/8 0.20s} 18. Rxh8 Qa1+ {+6.05/8 0.20s} 19. Kd2
+Qxh1 {+5.10/8 0.19s} 20. g4 fxg5 {+6.15/7 0.11s} 21. gxf5 Qxh2 {+7.05/8 0.12s}
+22. fxe6 Qxf2+ {+7.15/9 0.20s} 23. Kd1 Qg1+ {+7.15/9 0.19s} 24. Kd2
+Qh2+ {+7.20/9 0.13s} 25. Kc1 Kxe6 {+7.25/7 0.15s} 26. Re8+ Kf7 {+7.30/7 0.11s}
+27. Rh8 g4 {+7.30/6 0.18s} 28. Rc8 c5 {+7.40/7 0.15s} 29. Kb1 c4 {+7.40/7 0.16s}
+30. Rd8 Ke7 {+7.40/6 0.11s} 31. Rd4 Qg2 {+7.50/7 0.15s} 32. Kc1
+g3 {+8.45/7 0.14s} 33. Rd5 Qe2 {+11.35/7 0.14s} 34. Kb1 g2 {+11.35/7 0.10s}
+35. Rg5 Qf1+ {+12.35/7 0.14s} 36. Ka2 g1=Q {+12.45/8 0.14s} 37. Rxg1
+Qxg1 {+12.45/7 0.16s} 38. Ka3 Qxe3+ {+12.55/6 0.15s} 39. Kb4
+Qd4 {+12.60/5 0.16s} 40. c3 Qd5 {+13.60/5 0.15s} 41. b3 cxb3 {+13.90/5 0.15s}
+42. Ka3 e3 {+14.80/5 0.15s} 43. Kb2 e2 {+21.40/5 0.15s} 44. c4
+Qxc4 {+M5/5 0.10s} 45. Kb1 Qc2+ {+M3/4 0.14s} 46. Ka1
+e1=R# {+M1/5 0.15s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "3"]
+[White "Voraxis_PVS"]
+[Black "Voraxis_Baseline"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:11"]
+[GameEndTime "2026-11-10T20:28:38.274 India Standard Time"]
+[GameStartTime "2026-11-10T20:28:26.773 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "66"]
+[TimeControl "5+0.1"]
+
+1. Nf3 {0.00/6 0.26s} Nf6 2. Nc3 {+0.20/7 0.22s} Nc6 3. e4 {+0.20/6 0.25s} d5
+4. exd5 {+0.20/6 0.13s} Nxd5 5. Nxd5 {+0.35/5 0.23s} Qxd5 6. d4 {+0.20/5 0.23s}
+Bg4 7. Be2 {+0.10/5 0.12s} e5 8. dxe5 {+0.05/5 0.15s} Bxf3
+9. Bxf3 {0.00/6 0.20s} Qxe5+ 10. Kf1 {0.00/6 0.13s} Bc5 11. Bxc6+ {0.00/5 0.23s}
+bxc6 12. Qf3 {+0.15/5 0.14s} O-O-O 13. Qh3+ {0.00/5 0.18s} Rd7
+14. Qf3 {-0.15/5 0.19s} Re8 15. g4 {-0.25/5 0.12s} Qd5 16. Qxd5 {-0.35/6 0.20s}
+cxd5 17. Bg5 {-0.40/6 0.10s} h6 18. Bd2 {-0.40/5 0.20s} Rde7
+19. Re1 {-0.45/6 0.12s} Rxe1+ 20. Bxe1 {-0.60/7 0.13s} Bd4
+21. Bc3 {-0.45/6 0.19s} Bxc3 22. bxc3 {-1.30/8 0.19s} Re4 23. g5 {-1.40/8 0.19s}
+hxg5 24. Rg1 {-2.05/9 0.12s} f6 25. Kg2 {-2.10/8 0.18s} Rc4
+26. Rd1 {-2.05/9 0.13s} Rxc3 27. Rxd5 {-2.05/8 0.18s} Rxc2
+28. a3 {-2.05/8 0.12s} Rb2 29. Rd4 {-2.00/7 0.090s} Rb3 30. Re4 {-1.95/7 0.089s}
+Kd8 31. Rd4+ {-1.95/8 0.12s} Kc8 32. Re4 {0.00/13 0.14s} Kd8
+33. Rd4+ {0.00/12 0.099s} Kc8 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "4"]
+[White "Voraxis_Baseline"]
+[Black "Voraxis_PVS"]
+[Result "0-1"]
+[ECO "A05"]
+[GameDuration "00:00:18"]
+[GameEndTime "2026-11-10T20:28:46.374 India Standard Time"]
+[GameStartTime "2026-11-10T20:28:28.083 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "120"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 {0.00/7 0.26s} 2. Nc3 d5 {0.00/7 0.25s} 3. d4 Bf5 {0.00/5 0.24s}
+4. Bf4 Nc6 {-0.10/5 0.13s} 5. e3 e6 {-0.15/5 0.22s} 6. Bb5 Bb4 {-0.15/4 0.23s}
+7. Ne5 Bxc3+ {-0.95/5 0.23s} 8. bxc3 O-O {-0.95/5 0.22s} 9. Bxc6
+bxc6 {-1.00/6 0.21s} 10. Nxc6 Qe8 {-0.90/6 0.14s} 11. Ne5 Qa4 {-0.85/5 0.21s}
+12. Nd3 Qc4 {0.00/5 0.21s} 13. Ke2 Bg4+ {+0.10/4 0.10s} 14. f3
+Ne4 {+0.05/5 0.21s} 15. Ke1 Nxc3 {+0.05/5 0.097s} 16. Ne5 Qb4 {+0.10/5 0.20s}
+17. a3 Qb2 {-0.30/5 0.13s} 18. Nd3 Nxd1 {0.00/6 0.17s} 19. Nxb2
+Nxb2 {+0.05/7 0.14s} 20. fxg4 Nc4 {0.00/7 0.15s} 21. Kf2 Rac8 {0.00/6 0.14s}
+22. Rhe1 Nd2 {0.00/6 0.11s} 23. Rad1 Ne4+ {+0.10/7 0.15s} 24. Kg1
+c5 {+0.05/6 0.17s} 25. Rc1 Rfe8 {+0.05/6 0.13s} 26. g5 cxd4 {+0.10/6 0.089s}
+27. exd4 Rc3 {+0.80/6 0.15s} 28. Re3 Rc4 {+0.95/6 0.10s} 29. Be5
+Rec8 {+1.00/5 0.11s} 30. Re2 Nxg5 {+1.05/6 0.17s} 31. Rd2 Ne4 {+2.00/6 0.087s}
+32. Re2 Ra4 {+2.00/6 0.17s} 33. Re3 f6 {+2.15/7 0.15s} 34. Bf4
+Rxd4 {+2.15/6 0.090s} 35. Re2 Nc3 {+4.20/5 0.13s} 36. Rxe6 Rxf4 {+4.40/6 0.13s}
+37. Re7 Nb5 {+4.90/5 0.11s} 38. Rd1 Rxc2 {+5.40/5 0.17s} 39. Re8+
+Kf7 {+5.35/6 0.13s} 40. Rd8 Rg4 {+5.50/5 0.16s} 41. g3 Nc3 {+5.60/5 0.091s}
+42. Rd7+ Ke6 {+7.20/6 0.10s} 43. Rc7 Ne2+ {+7.30/6 0.16s} 44. Kf2
+Rxc7 {+7.35/6 0.10s} 45. Re1 Re4 {+8.35/7 0.099s} 46. Rxe2 Rxe2+ {+9.25/8 0.13s}
+47. Kxe2 Rc2+ {+9.25/7 0.15s} 48. Kd1 Rxh2 {+9.30/6 0.15s} 49. g4
+Rg2 {+9.35/6 0.078s} 50. Kc1 Ra2 {+10.30/6 0.082s} 51. Kb1 Rxa3 {+10.35/6 0.15s}
+52. Kb2 Rg3 {+10.50/7 0.12s} 53. Ka1 Rxg4 {+10.60/7 0.15s} 54. Kb1
+Rg2 {+10.60/6 0.15s} 55. Ka1 f5 {+11.00/7 0.14s} 56. Kb1 f4 {+11.00/6 0.14s}
+57. Kc1 f3 {+M7/6 0.14s} 58. Kd1 Re2 {+M5/6 0.084s} 59. Kc1 f2 {+M3/6 0.14s}
+60. Kb1 f1=R# {+M1/6 0.11s, Black mates} 0-1
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.10"]
+[Round "5"]
+[White "Voraxis_PVS"]
+[Black "Voraxis_Baseline"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:11"]
+[GameEndTime "2026-11-10T20:28:49.713 India Standard Time"]
+[GameStartTime "2026-11-10T20:28:38.280 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "66"]
+[TimeControl "5+0.1"]
+
+1. Nf3 {0.00/6 0.25s} Nf6 2. Nc3 {+0.20/7 0.20s} Nc6 3. e4 {+0.20/6 0.25s} d5
+4. exd5 {+0.20/6 0.14s} Nxd5 5. Nxd5 {+0.35/5 0.24s} Qxd5 6. d4 {+0.20/5 0.24s}
+Bg4 7. Be2 {+0.10/5 0.12s} e5 8. dxe5 {+0.05/5 0.16s} Bxf3
+9. Bxf3 {0.00/6 0.18s} Qxe5+ 10. Kf1 {0.00/6 0.13s} Bc5 11. Bxc6+ {0.00/5 0.22s}
+bxc6 12. Qf3 {+0.15/5 0.14s} O-O-O 13. Qh3+ {0.00/5 0.19s} Rd7
+14. Qf3 {-0.15/4 0.21s} Re8 15. g4 {-0.25/5 0.11s} Qd5 16. Qxd5 {-0.35/6 0.20s}
+cxd5 17. Bg5 {-0.40/6 0.11s} h6 18. Bd2 {-0.40/5 0.20s} Rde7
+19. Re1 {-0.45/6 0.12s} Rxe1+ 20. Bxe1 {-0.60/7 0.12s} Bd4
+21. Bc3 {-0.45/6 0.20s} Bxc3 22. bxc3 {-1.40/9 0.18s} Re4 23. g5 {-1.40/8 0.19s}
+hxg5 24. Rg1 {-2.05/9 0.10s} f6 25. Kg2 {-2.10/9 0.18s} Rc4
+26. Rd1 {-2.05/9 0.098s} Rxc3 27. Rxd5 {-2.00/9 0.15s} Rxc2
+28. a3 {-2.05/8 0.10s} Rb2 29. Rd4 {-2.00/7 0.18s} Rb3 30. Re4 {-1.95/8 0.17s}
+Kd8 31. Rd4+ {-1.95/8 0.12s} Kc8 32. Re4 {0.00/13 0.11s} Kd8
+33. Rd4+ {0.00/12 0.10s} Kc8 {Draw by 3-fold repetition} 1/2-1/2
+
