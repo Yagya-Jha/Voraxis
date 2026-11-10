@@ -128,9 +128,9 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Standard piece values (P=100, N=320, B=330, R=500, Q=900).
     [x] Piece-square tables for positional play.
 
-[ ] 4.2 Tapered Evaluation & Phase Calculation
-    - Continuous game phase transition (Opening/Middlegame -> Endgame).
-    - Separate MG and EG piece square tables interpolated by game phase.
+[x] 4.2 Tapered Evaluation & Phase Calculation (COMPLETED)
+    [x] Continuous game phase transition (Opening/Middlegame -> Endgame).
+    [x] Separate MG and EG piece square tables interpolated by game phase.
 
 [ ] 4.3 Pawn Structure Evaluation
     - Doubled pawns penalty.
