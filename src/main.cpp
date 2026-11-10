@@ -2,12 +2,14 @@
 #include <string>
 #include "board.h"
 #include "movegen.h"
+#include "book.h"
 #include "uci.h"
 
 int main(int argc, char* argv[]) {
     // Initialize lookup tables and zobrist keys
     Voraxis::Movegen::initAttackTables();
     Voraxis::Board::initZobrist();
+    Voraxis::Book::init("books/komodo.bin");
 
     // Check command line arguments for direct testing
     if (argc > 1) {

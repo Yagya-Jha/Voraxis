@@ -1,6 +1,7 @@
 #include "uci.h"
 #include "movegen.h"
 #include "search.h"
+#include "book.h"
 #include <iostream>
 #include <sstream>
 #include <chrono>
@@ -98,6 +99,14 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
 
         if (depth > 0) {
             limits.depth = depth;
+        }
+
+        // 1. Try opening book move first (up to move 25)
+        Move bookMove = Book::getBookMove(board, 25);
+        if (bookMove.from != SQ_NONE) {
+            std::cout << "bestmove " << bookMove.toUCI() << "\n";
+            std::cout.flush();
+            return;
         }
 
         limits.startTime = Search::nowMs();

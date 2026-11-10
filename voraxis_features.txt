@@ -171,10 +171,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 6. OPENING BOOK
 ================================================================================
 
-[ ] 6.1 Polyglot Opening Book Support
-    - Binary Polyglot .bin file parser.
-    - Zobrist hashing matching Polyglot specification.
-    - Weighted move selection among book options.
+[x] 6.1 Polyglot Opening Book Support (COMPLETED)
+    [x] Binary Polyglot .bin file parser.
+    [x] Zobrist hashing matching Polyglot specification.
+    [x] Weighted move selection among book options.
     - UCI "OwnBook" option toggle and "BookPath".
 
 ================================================================================
