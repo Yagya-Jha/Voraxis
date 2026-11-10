@@ -4,7 +4,7 @@
 #include "evaluate.h"
 #include <algorithm>
 #include <chrono>
-
+#include <cstring>
 #define MIN -1000000
 #define MAX 1000000
 
@@ -13,6 +13,8 @@ namespace Search {
 
 bool stopSearch = false;
 long long searchedNodes = 0;
+int historyTable[12][64];
+Move killerMoves[64][2];
 
 long long nowMs() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -38,8 +40,9 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     } else if (limits.time <= 0) {
         maxDepth = 5; // Default depth if no time or depth limit specified
     }
-
-    std::vector<Move> legalMoves = returnSortedMoves(board);
+    std::memset(killerMoves, 0, sizeof(killerMoves));
+    std::memset(historyTable, 0, sizeof(historyTable));
+    std::vector<Move> legalMoves = returnSortedMoves(board, 1);
     if (legalMoves.empty()) {
         return Move();
     }
@@ -54,7 +57,7 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
 
         for (Move move : legalMoves) {
             board.applyMove(move);
-            int score = -negamax(board, currDepth - 1, -beta, -alpha, limits);
+            int score = -negamax(board, currDepth - 1, -beta, -alpha, limits, 1);
             board.undoMove(move);
 
             if (stopSearch) {
@@ -98,10 +101,10 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     return bestMove;
 }
 
-std::vector<Move> returnSortedMoves(Board& board) {
+std::vector<Move> returnSortedMoves(Board& board, int ply) {
     std::vector<Move> legalMoves = Movegen::generateLegalMoves(board);
-    std::sort(legalMoves.begin(), legalMoves.end(), [](const Move& a, const Move& b) {
-        return scoreMove(a) > scoreMove(b);
+    std::sort(legalMoves.begin(), legalMoves.end(), [ply](const Move& a, const Move& b) {
+        return scoreMove(a, ply) > scoreMove(b, ply);
     });
     return legalMoves;
 }
@@ -121,7 +124,7 @@ int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits) {
         alpha = standPat;
     }
 
-    std::vector<Move> legalMoves = returnSortedMoves(board);
+    std::vector<Move> legalMoves = returnSortedMoves(board, 0);
     for (const Move& move : legalMoves) {
         if (move.captured == NO_PIECE && move.promotion == NO_PIECE) {
             continue;
@@ -150,7 +153,7 @@ int getPieceValue(int pType) {
     return arr[pType];
 }
 
-int scoreMove(const Move move) {
+int scoreMove(const Move move, int ply) {
     int score = 0;
     if (move.captured != NO_PIECE) {
         score = 10000;
@@ -158,13 +161,26 @@ int scoreMove(const Move move) {
         int att_val = getPieceValue(pieceType(move.piece));
         score += vic_val * 10 - att_val;
     }
+    if(move.captured == NO_PIECE){
+        if(ply<64 && move == killerMoves[ply][0]){
+            score = 9000;
+        }else{
+
+            if(ply<64 && move == killerMoves[ply][1]){
+                score = 8000;
+            }else{
+                score = historyTable[move.piece][move.to];
+            }
+        }
+
+    }
     if (move.promotion != NO_PIECE) {
         score += 9000;
     }
     return score;
 }
 
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits) {
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply) {
     searchedNodes++;
     checkTime(limits);
     if (stopSearch) {
@@ -175,7 +191,7 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         return quiescence(board, alpha, beta, limits);
     }
 
-    std::vector<Move> legalMoves = returnSortedMoves(board);
+    std::vector<Move> legalMoves = returnSortedMoves(board, ply);
 
     if (legalMoves.empty()) {
         if (Movegen::inCheck(board, board.getSideToMove())) {
@@ -187,7 +203,7 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
 
     for (Move move : legalMoves) {
         board.applyMove(move);
-        int score = -negamax(board, depth - 1, -beta, -alpha, limits);
+        int score = -negamax(board, depth - 1, -beta, -alpha, limits, ply+1);
         board.undoMove(move);
 
         if (stopSearch) {
@@ -195,6 +211,15 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         }
 
         if (score >= beta) {
+            if (move.captured == NO_PIECE) {
+                if (ply < 64) {
+                    if (move != killerMoves[ply][0]) {
+                        killerMoves[ply][1] = killerMoves[ply][0];
+                        killerMoves[ply][0] = move;
+                    }
+                }
+                historyTable[move.piece][move.to] += depth * depth;
+            }
             return beta;
         }
         if (score > alpha) {

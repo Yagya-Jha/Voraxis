@@ -71,6 +71,9 @@ struct Move {
     bool operator==(const Move& other) const {
         return from == other.from && to == other.to && promotion == other.promotion;
     }
+    bool operator!=(const Move& other) const {
+        return !(*this == other);
+    }
 
     std::string toUCI() const;
     static Move fromUCI(const std::string& uciStr, const class Board& board);

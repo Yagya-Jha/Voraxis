@@ -106,11 +106,11 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Verified across 22 benchmark positions via Perft suite (12.5M nodes).
 
 [ ] 3.2 Move Ordering
-    - 1. TT / Hash move.
+    - 1. TT / Hash move (after TT implementation).
     [x] 2. Winning & equal captures (MVV-LVA: Most Valuable Victim - Least Valuable Attacker).
     [x] 3. Queen promotions.
-    - 4. Killer moves (quiet moves causing beta cutoffs at same ply).
-    - 5. History heuristic (quiet moves indexed by [piece][to_square]).
+    [x] 4. Killer moves (quiet moves causing beta cutoffs at same ply).
+    [x] 5. History heuristic (quiet moves indexed by [piece][to_square]).
     - 6. Countermove heuristic.
     - 7. Bad captures (losing captures).
     - 8. Remaining quiet moves.

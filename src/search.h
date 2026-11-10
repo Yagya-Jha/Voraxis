@@ -24,12 +24,12 @@ void checkTime(const SearchLimits& limits);
 Move getBestMove(Board& board, const SearchLimits& limits = SearchLimits());
 
 int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits);
-int scoreMove(const Move move);
+int scoreMove(const Move move, int ply = 0);
 int getPieceValue(int pType);
-std::vector<Move> returnSortedMoves(Board& board);
+std::vector<Move> returnSortedMoves(Board& board, int ply = 0);
 
 // Negamax search algorithm
-int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits);
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply = 0);
 
 } // namespace Search
 } // namespace Voraxis
