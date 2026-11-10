@@ -1,4 +1,5 @@
 #include "evaluate.h"
+#include "movegen.h"
 #include <algorithm>
 
 namespace Voraxis {
@@ -147,14 +148,19 @@ static const int eg_king_table[64] = {
 };
 
 // ============================================================================
-// Pawn Structure Lookup Masks & Tables (4.3)
+// Pawn Structure & Board Lookup Bitboards (4.3 & 4.4)
 // ============================================================================
+constexpr uint64_t LIGHT_SQUARES_BB = 0x55AA55AA55AA55AAULL;
+constexpr uint64_t DARK_SQUARES_BB = ~LIGHT_SQUARES_BB;
+constexpr uint64_t CENTER_MASK = 0x00003C3C3C3C0000ULL;
+
 static uint64_t fileMask[8];
 static uint64_t rankMask[8];
 static uint64_t adjacentFilesMask[8];
 static uint64_t passedPawnMask[2][64];
 static uint64_t pawnSupportMask[2][64];
 static uint64_t pawnStopAttackMask[2][64];
+static uint64_t outpostHoleMask[2][64];
 static uint64_t ranksBehindAndEqual[2][8];
 static bool tablesInitialized = false;
 
@@ -243,6 +249,19 @@ void initEvaluation() {
                 if (stop_f > 0) pawnStopAttackMask[BLACK][sq] |= (1ULL << ((stop_r - 1) * 8 + stop_f - 1));
                 if (stop_f < 7) pawnStopAttackMask[BLACK][sq] |= (1ULL << ((stop_r - 1) * 8 + stop_f + 1));
             }
+        }
+
+        // 4.4 Outpost hole masks (enemy pawns on adjacent files that could attack or advance to attack sq)
+        outpostHoleMask[WHITE][sq] = 0ULL;
+        for (int r_opp = r; r_opp < 8; ++r_opp) {
+            if (f > 0) outpostHoleMask[WHITE][sq] |= (1ULL << (r_opp * 8 + f - 1));
+            if (f < 7) outpostHoleMask[WHITE][sq] |= (1ULL << (r_opp * 8 + f + 1));
+        }
+
+        outpostHoleMask[BLACK][sq] = 0ULL;
+        for (int r_opp = r; r_opp >= 0; --r_opp) {
+            if (f > 0) outpostHoleMask[BLACK][sq] |= (1ULL << (r_opp * 8 + f - 1));
+            if (f < 7) outpostHoleMask[BLACK][sq] |= (1ULL << (r_opp * 8 + f + 1));
         }
     }
 
@@ -342,8 +361,8 @@ void evaluatePawnStructure(const Board& board, int& mgScore, int& egScore) {
         // Backward pawn
         else if ((bPawns & adjacentFilesMask[f] & ranksBehindAndEqual[BLACK][r]) == 0) {
             if (wPawns & pawnStopAttackMask[BLACK][sq]) {
-                mgScore += 14;
-                egScore += 18;
+                mgScore -= 14;
+                egScore -= 18;
             }
         }
 
@@ -397,6 +416,185 @@ void evaluatePawnStructure(const Board& board, int& mgScore, int& egScore) {
         int relRank = 7 - r;
         mgScore -= PHALANX_MG[relRank];
         egScore -= PHALANX_EG[relRank];
+    }
+}
+
+// 4.4 Piece Activity & Coordination: Bishop Pair, Rooks on Open/7th, Outposts, Bad Bishops
+void evaluatePieceActivity(const Board& board, int& mgScore, int& egScore) {
+    uint64_t wPawns = board.pieceBB[W_PAWN];
+    uint64_t bPawns = board.pieceBB[B_PAWN];
+    uint64_t occAll = board.occBB[WHITE] | board.occBB[BLACK];
+
+    // 1. Bishop Pair Bonus
+    int wBishopsCount = __builtin_popcountll(board.pieceBB[W_BISHOP]);
+    if (wBishopsCount >= 2) {
+        mgScore += 30;
+        egScore += 50;
+    }
+    int bBishopsCount = __builtin_popcountll(board.pieceBB[B_BISHOP]);
+    if (bBishopsCount >= 2) {
+        mgScore -= 30;
+        egScore -= 50;
+    }
+
+    // 2. Rooks on Open & Semi-Open Files, and on 7th Rank
+    uint64_t wRooks = board.pieceBB[W_ROOK];
+    int wRooksOn7th = 0;
+    while (wRooks) {
+        int sq = __builtin_ctzll(wRooks);
+        wRooks &= wRooks - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+
+        // Open and Semi-Open file
+        if ((wPawns & fileMask[f]) == 0) {
+            if ((bPawns & fileMask[f]) == 0) {
+                // Open file
+                mgScore += 30;
+                egScore += 20;
+            } else {
+                // Semi-open file
+                mgScore += 15;
+                egScore += 10;
+            }
+        }
+
+        // Rook on 7th rank (attacking pawns or pinning king)
+        if (r == 6) {
+            if ((board.pieceBB[B_KING] & (rankMask[6] | rankMask[7])) || (bPawns & rankMask[6])) {
+                mgScore += 25;
+                egScore += 40;
+                wRooksOn7th++;
+            }
+        }
+    }
+    if (wRooksOn7th >= 2) {
+        // Doubled rooks on 7th rank
+        mgScore += 20;
+        egScore += 30;
+    }
+
+    uint64_t bRooks = board.pieceBB[B_ROOK];
+    int bRooksOn2nd = 0;
+    while (bRooks) {
+        int sq = __builtin_ctzll(bRooks);
+        bRooks &= bRooks - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+
+        // Open and Semi-Open file
+        if ((bPawns & fileMask[f]) == 0) {
+            if ((wPawns & fileMask[f]) == 0) {
+                // Open file
+                mgScore -= 30;
+                egScore -= 20;
+            } else {
+                // Semi-open file
+                mgScore -= 15;
+                egScore -= 10;
+            }
+        }
+
+        // Rook on 2nd rank (White's 2nd rank from Black perspective)
+        if (r == 1) {
+            if ((board.pieceBB[W_KING] & (rankMask[0] | rankMask[1])) || (wPawns & rankMask[1])) {
+                mgScore -= 25;
+                egScore -= 40;
+                bRooksOn2nd++;
+            }
+        }
+    }
+    if (bRooksOn2nd >= 2) {
+        mgScore -= 20;
+        egScore -= 30;
+    }
+
+    // 3. Knight Outposts on Central Protected Squares
+    uint64_t wKnights = board.pieceBB[W_KNIGHT];
+    while (wKnights) {
+        int sq = __builtin_ctzll(wKnights);
+        wKnights &= wKnights - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+
+        // Central files (c, d, e, f) and advanced ranks (4, 5, 6)
+        if (f >= 2 && f <= 5 && r >= 3 && r <= 5) {
+            if (wPawns & pawnSupportMask[WHITE][sq]) {
+                // Supported by friendly pawn
+                if ((bPawns & outpostHoleMask[WHITE][sq]) == 0) {
+                    // Outpost hole: cannot be driven away by enemy pawn
+                    int bonusMG = (r >= 4) ? 30 : 15;
+                    int bonusEG = (r >= 4) ? 20 : 10;
+                    mgScore += bonusMG;
+                    egScore += bonusEG;
+                }
+            }
+        }
+    }
+
+    uint64_t bKnights = board.pieceBB[B_KNIGHT];
+    while (bKnights) {
+        int sq = __builtin_ctzll(bKnights);
+        bKnights &= bKnights - 1;
+        int f = sq % 8;
+        int r = sq / 8;
+        int relRank = 7 - r;
+
+        if (f >= 2 && f <= 5 && relRank >= 3 && relRank <= 5) {
+            if (bPawns & pawnSupportMask[BLACK][sq]) {
+                if ((wPawns & outpostHoleMask[BLACK][sq]) == 0) {
+                    int bonusMG = (relRank >= 4) ? 30 : 15;
+                    int bonusEG = (relRank >= 4) ? 20 : 10;
+                    mgScore -= bonusMG;
+                    egScore -= bonusEG;
+                }
+            }
+        }
+    }
+
+    // 4. Bad Bishops Blocked by Friendly Pawns & Mobility
+    uint64_t wBishops = board.pieceBB[W_BISHOP];
+    while (wBishops) {
+        int sq = __builtin_ctzll(wBishops);
+        wBishops &= wBishops - 1;
+
+        bool isLight = ((1ULL << sq) & LIGHT_SQUARES_BB) != 0;
+        int sameColorPawns = __builtin_popcountll(wPawns & (isLight ? LIGHT_SQUARES_BB : DARK_SQUARES_BB) & CENTER_MASK);
+        if (sameColorPawns >= 2) {
+            mgScore -= (sameColorPawns - 1) * 8;
+            egScore -= (sameColorPawns - 1) * 12;
+        }
+
+        int mob = __builtin_popcountll(Movegen::getBishopAttacks(sq, occAll) & ~board.occBB[WHITE]);
+        if (mob <= 3) {
+            mgScore -= 15;
+            egScore -= 20;
+        } else if (mob >= 8) {
+            mgScore += 10;
+            egScore += 15;
+        }
+    }
+
+    uint64_t bBishops = board.pieceBB[B_BISHOP];
+    while (bBishops) {
+        int sq = __builtin_ctzll(bBishops);
+        bBishops &= bBishops - 1;
+
+        bool isLight = ((1ULL << sq) & LIGHT_SQUARES_BB) != 0;
+        int sameColorPawns = __builtin_popcountll(bPawns & (isLight ? LIGHT_SQUARES_BB : DARK_SQUARES_BB) & CENTER_MASK);
+        if (sameColorPawns >= 2) {
+            mgScore += (sameColorPawns - 1) * 8;
+            egScore += (sameColorPawns - 1) * 12;
+        }
+
+        int mob = __builtin_popcountll(Movegen::getBishopAttacks(sq, occAll) & ~board.occBB[BLACK]);
+        if (mob <= 3) {
+            mgScore += 15;
+            egScore += 20;
+        } else if (mob >= 8) {
+            mgScore -= 10;
+            egScore -= 15;
+        }
     }
 }
 
@@ -519,6 +717,11 @@ int evaluate(const Board& board) {
     // 4.3 Pawn Structure Evaluation
     // ------------------------------------------------------------------------
     evaluatePawnStructure(board, mgScore, egScore);
+
+    // ------------------------------------------------------------------------
+    // 4.4 Piece Activity & Coordination Evaluation
+    // ------------------------------------------------------------------------
+    evaluatePieceActivity(board, mgScore, egScore);
 
     // ------------------------------------------------------------------------
     // Tapered Interpolation by Game Phase (4.2)

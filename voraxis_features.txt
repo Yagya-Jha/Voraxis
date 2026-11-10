@@ -139,12 +139,12 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Passed pawns bonus (scaled by advancement and protected status).
     [x] Connected pawns and pawn phalanxes.
 
-[ ] 4.4 Piece Activity & Coordination
-    - Bishop pair bonus.
-    - Rooks on open and semi-open files.
-    - Rooks on 7th rank.
-    - Knight outposts on central protected squares.
-    - Bad bishops blocked by friendly pawns.
+[x] 4.4 Piece Activity & Coordination (COMPLETED)
+    [x] Bishop pair bonus.
+    [x] Rooks on open and semi-open files.
+    [x] Rooks on 7th rank.
+    [x] Knight outposts on central protected squares.
+    [x] Bad bishops blocked by friendly pawns.
 
 [ ] 4.5 King Safety
     - Pawn shelter shield in front of castled king.
