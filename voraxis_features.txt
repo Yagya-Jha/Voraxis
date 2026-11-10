@@ -124,36 +124,36 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 4. EVALUATION FUNCTION
 ================================================================================
 
-[x] 4.1 Basic Material & PSTs (BASELINE COMPLETED)
+[x] 4.1 Basic Material & PSTs (BASELINE ACTIVE)
     [x] Standard piece values (P=100, N=320, B=330, R=500, Q=900).
     [x] Piece-square tables for positional play.
 
-[x] 4.2 Tapered Evaluation & Phase Calculation (COMPLETED)
-    [x] Continuous game phase transition (Opening/Middlegame -> Endgame).
-    [x] Separate MG and EG piece square tables interpolated by game phase.
+[FAILED] 4.2 Tapered Evaluation & Phase Calculation (TESTED & REVERTED: -137 Elo regression due to untuned weights & NPS loss)
+    [FAILED] Continuous game phase transition (Opening/Middlegame -> Endgame).
+    [FAILED] Separate MG and EG piece square tables interpolated by game phase.
 
-[x] 4.3 Pawn Structure Evaluation (COMPLETED)
-    [x] Doubled pawns penalty.
-    [x] Isolated pawns penalty.
-    [x] Backward pawns penalty.
-    [x] Passed pawns bonus (scaled by advancement and protected status).
-    [x] Connected pawns and pawn phalanxes.
+[FAILED] 4.3 Pawn Structure Evaluation (TESTED & REVERTED: over-penalized pawn structure vs tactical activity)
+    [FAILED] Doubled pawns penalty.
+    [FAILED] Isolated pawns penalty.
+    [FAILED] Backward pawns penalty.
+    [FAILED] Passed pawns bonus (scaled by advancement and protected status).
+    [FAILED] Connected pawns and pawn phalanxes.
 
-[x] 4.4 Piece Activity & Coordination (COMPLETED)
-    [x] Bishop pair bonus.
-    [x] Rooks on open and semi-open files.
-    [x] Rooks on 7th rank.
-    [x] Knight outposts on central protected squares.
-    [x] Bad bishops blocked by friendly pawns.
+[FAILED] 4.4 Piece Activity & Coordination (TESTED & REVERTED: expensive leaf-node ray attacks lowered NPS)
+    [FAILED] Bishop pair bonus.
+    [FAILED] Rooks on open and semi-open files.
+    [FAILED] Rooks on 7th rank.
+    [FAILED] Knight outposts on central protected squares.
+    [FAILED] Bad bishops blocked by friendly pawns.
 
-[x] 4.5 King Safety (COMPLETED)
-    [x] Pawn shelter shield in front of castled king.
-    [x] Open files / semi-open files towards king.
-    [x] Virtual attacker count and king zone danger tables.
+[FAILED] 4.5 King Safety (TESTED & REVERTED: over-weighted shelter/danger penalties caused tactical blunders)
+    [FAILED] Pawn shelter shield in front of castled king.
+    [FAILED] Open files / semi-open files towards king.
+    [FAILED] Virtual attacker count and king zone danger tables.
 
-[x] 4.6 Endgame Specific Knowledge (COMPLETED)
-    [x] King centralization towards passed pawns.
-    [x] Cornering lone king in K+Q vs K, K+R vs K.
+[FAILED] 4.6 Endgame Specific Knowledge (TESTED & REVERTED)
+    [FAILED] King centralization towards passed pawns.
+    [FAILED] Cornering lone king in K+Q vs K, K+R vs K.
 
 ================================================================================
 5. TIME MANAGEMENT AND SEARCH CONTROL
