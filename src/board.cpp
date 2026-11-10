@@ -439,15 +439,20 @@ void Board::undoMove(const Move& move) {
     zobristKey = undo.zobristKey;
 }
 
-bool Board::isThreefoldRepetition() const {
+bool Board::isRepetition(int ply) const {
     int count = 0;
     for (uint64_t key : repetitionHistory) {
         if (key == zobristKey) {
             count++;
+            if (ply > 0 && count >= 2) return true;
             if (count >= 3) return true;
         }
     }
     return false;
+}
+
+bool Board::isThreefoldRepetition() const {
+    return isRepetition(0);
 }
 
 bool Board::isInsufficientMaterial() const {

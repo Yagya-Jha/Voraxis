@@ -115,6 +115,7 @@ public:
 
     bool isFiftyMoveDraw() const { return halfmoveClock >= 100; }
     bool isThreefoldRepetition() const;
+    bool isRepetition(int ply = 0) const;
     bool isInsufficientMaterial() const;
 
     int getSideToMove() const { return sideToMove; }

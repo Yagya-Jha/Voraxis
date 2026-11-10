@@ -247,8 +247,8 @@ int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& li
         return 0;
     }
 
-    // In-search draw detection (threefold repetition, 50-move rule, insufficient material)
-    if (ply > 0 && (board.isFiftyMoveDraw() || board.isThreefoldRepetition() || board.isInsufficientMaterial())) {
+    // In-search draw detection (repetition, 50-move rule, insufficient material)
+    if (ply > 0 && (board.isFiftyMoveDraw() || board.isRepetition(ply) || board.isInsufficientMaterial())) {
         return 0;
     }
 
