@@ -115,8 +115,10 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     - 7. Bad captures (losing captures).
     - 8. Remaining quiet moves.
 
-[ ] 3.3 Static Exchange Evaluation (SEE)
-    - Fast capture exchange evaluation to prune or order losing captures.
+[x] 3.3 Static Exchange Evaluation (SEE) (COMPLETED)
+    [x] Fast capture exchange evaluation to prune or order losing captures.
+    [x] Move ordering: winning/equal captures prioritized; losing captures demoted.
+    [x] Quiescence search pruning: prune losing captures (SEE < 0) when not in check.
 
 ================================================================================
 4. EVALUATION FUNCTION

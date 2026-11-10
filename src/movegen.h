@@ -9,6 +9,9 @@ namespace Movegen {
 
 void initAttackTables();
 
+uint64_t getPawnAttacks(int color, int sq);
+uint64_t getKnightAttacks(int sq);
+uint64_t getKingAttacks(int sq);
 uint64_t getBishopAttacks(int sq, uint64_t occ);
 uint64_t getRookAttacks(int sq, uint64_t occ);
 uint64_t getQueenAttacks(int sq, uint64_t occ);

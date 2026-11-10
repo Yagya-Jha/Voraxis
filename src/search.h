@@ -59,8 +59,8 @@ void clearTT();
 
 // Move scoring and ordering
 int getPieceValue(int pType);
-int scoreMove(const Move move, int ply, const Move& ttMove);
-int scoreMove(const Move move, int ply = 0);
+int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove);
+int scoreMove(const Board& board, const Move move, int ply = 0);
 std::vector<Move> returnSortedMoves(Board& board, int ply = 0);
 
 // Search algorithms

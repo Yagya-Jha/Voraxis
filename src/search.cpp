@@ -3,6 +3,7 @@
 #include "board.h"
 #include "evaluate.h"
 #include "syzygy_bridge.h"
+#include "see.h"
 #include <algorithm>
 #include <chrono>
 #include <cstring>
@@ -176,8 +177,8 @@ std::vector<Move> returnSortedMoves(Board& board, int ply) {
         ttMove = entry->bestMove;
     }
 
-    std::sort(legalMoves.begin(), legalMoves.end(), [ply, ttMove](const Move& a, const Move& b) {
-        return scoreMove(a, ply, ttMove) > scoreMove(b, ply, ttMove);
+    std::sort(legalMoves.begin(), legalMoves.end(), [&board, ply, ttMove](const Move& a, const Move& b) {
+        return scoreMove(board, a, ply, ttMove) > scoreMove(board, b, ply, ttMove);
     });
     return legalMoves;
 }
@@ -209,8 +210,15 @@ int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, in
     }
 
     for (const Move& move : legalMoves) {
-        if (!inCheck && move.captured == NO_PIECE && move.promotion == NO_PIECE) {
+        if (!inCheck && move.captured == NO_PIECE && move.promotion == NO_PIECE && !move.isEnPassant) {
             continue;
+        }
+
+        // SEE Pruning in Quiescence Search: prune losing captures (SEE < 0) when not in check
+        if (!inCheck && (move.captured != NO_PIECE || move.isEnPassant)) {
+            if (!SEE::hasPositiveSEE(board, move, 0)) {
+                continue;
+            }
         }
 
         board.applyMove(move);
@@ -236,38 +244,41 @@ int getPieceValue(int pType) {
     return arr[pType];
 }
 
-int scoreMove(const Move move, int ply, const Move& ttMove) {
+int scoreMove(const Board& board, const Move move, int ply, const Move& ttMove) {
     if (ttMove.from != SQ_NONE && move == ttMove) {
         return 30000;
     }
     int score = 0;
-    if (move.captured != NO_PIECE) {
-        score = 10000;
-        int vic_val = getPieceValue(pieceType(move.captured));
-        int att_val = getPieceValue(pieceType(move.piece));
-        score += vic_val * 10 - att_val;
-    }
-    if (move.captured == NO_PIECE) {
-        if (ply < 64 && move == killerMoves[ply][0]) {
-            score = 9000;
+    if (move.captured != NO_PIECE || move.isEnPassant) {
+        int seeScore = SEE::evaluate(board, move);
+        if (seeScore >= 0) {
+            // Winning / equal captures: high priority
+            int vic_val = (move.captured != NO_PIECE) ? getPieceValue(pieceType(move.captured)) : 100;
+            int att_val = getPieceValue(pieceType(move.piece));
+            score = 10000 + (vic_val * 10 - att_val) + seeScore;
         } else {
-            if (ply < 64 && move == killerMoves[ply][1]) {
-                score = 8000;
-            } else {
-                if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
-                    score = historyTable[move.piece][move.to];
-                }
-            }
+            // Losing capture: demoted below quiet moves and killers
+            score = -10000 + seeScore;
         }
+        return score;
     }
     if (move.promotion != NO_PIECE) {
         score += 9000;
     }
+    if (ply < 64 && move == killerMoves[ply][0]) {
+        score = 8000;
+    } else if (ply < 64 && move == killerMoves[ply][1]) {
+        score = 7000;
+    } else {
+        if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
+            score = historyTable[move.piece][move.to];
+        }
+    }
     return score;
 }
 
-int scoreMove(const Move move, int ply) {
-    return scoreMove(move, ply, Move());
+int scoreMove(const Board& board, const Move move, int ply) {
+    return scoreMove(board, move, ply, Move());
 }
 
 int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull) {

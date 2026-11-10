@@ -60,6 +60,21 @@ void initAttackTables() {
     tablesInitialized = true;
 }
 
+uint64_t getPawnAttacks(int color, int sq) {
+    if (!tablesInitialized) initAttackTables();
+    return pawnAttacks[color][sq];
+}
+
+uint64_t getKnightAttacks(int sq) {
+    if (!tablesInitialized) initAttackTables();
+    return knightAttacks[sq];
+}
+
+uint64_t getKingAttacks(int sq) {
+    if (!tablesInitialized) initAttackTables();
+    return kingAttacks[sq];
+}
+
 uint64_t getBishopAttacks(int sq, uint64_t occ) {
     uint64_t attacks = 0ULL;
     int f = squareFile(sq);
