@@ -52,7 +52,7 @@ def main():
         r"Finished game (\d+) \(([^)]+)\):\s+([0-9/\*-]+)\s*(?:\{([^}]*)\})?"
     )
     info_re = re.compile(
-        r"<\s*([A-Za-z0-9_]+)\(\d+\)\s*:\s*info depth (\d+) score cp (-?\d+) nodes (\d+) time (\d+)"
+        r"<\s*([A-Za-z0-9_]+)\(\d+\)\s*:\s*info depth (\d+) score (?:cp|mate) (-?\d+) nodes (\d+) time (\d+)"
     )
 
     results = {

@@ -198,9 +198,9 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Threefold repetition history detection.
     [x] Fifty-move rule clock detection.
     [x] Insufficient material detection.
-[ ] 8.2 In-Search Draw & Mate Scoring
-    - Evaluate 3-fold repetition and 50-move rule directly within search tree.
-    - Score checkmates with distance penalty (prefer shorter mates).
+[x] 8.2 In-Search Draw & Mate Scoring (COMPLETED)
+    [x] Evaluate 3-fold repetition and 50-move rule directly within search tree.
+    [x] Score checkmates with distance penalty (prefer shorter mates).
 
 ================================================================================
 9. UCI PROTOCOL ENHANCEMENTS

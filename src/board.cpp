@@ -478,8 +478,10 @@ bool Board::hasNonPawnMaterial(int color) const {
 
 bool Board::isRepetition(int ply) const {
     int count = 0;
-    for (uint64_t key : repetitionHistory) {
-        if (key == zobristKey) {
+    int limit = std::min((int)repetitionHistory.size(), halfmoveClock + 1);
+    for (int i = 0; i < limit; ++i) {
+        int idx = (int)repetitionHistory.size() - 1 - i;
+        if (repetitionHistory[idx] == zobristKey) {
             count++;
             if (ply > 0 && count >= 2) return true;
             if (count >= 3) return true;

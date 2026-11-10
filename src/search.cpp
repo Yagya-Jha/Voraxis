@@ -97,7 +97,17 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
         Move tbMove;
         int tbScore = 0;
         if (Syzygy::probeRoot(board, tbMove, tbScore)) {
-            std::cout << "info depth 1 score cp " << tbScore << " nodes 1 time 0 pv " << tbMove.toUCI() << "\n";
+            std::cout << "info depth 1";
+            if (tbScore >= MATE_THRESHOLD) {
+                int mateMoves = (MATE_SCORE - tbScore + 1) / 2;
+                std::cout << " score mate " << mateMoves;
+            } else if (tbScore <= -MATE_THRESHOLD) {
+                int mateMoves = -(MATE_SCORE + tbScore + 1) / 2;
+                std::cout << " score mate " << mateMoves;
+            } else {
+                std::cout << " score cp " << tbScore;
+            }
+            std::cout << " nodes 1 time 0 pv " << tbMove.toUCI() << "\n";
             std::cout.flush();
             return tbMove;
         }
@@ -199,7 +209,17 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
             prevScore = currentIterScore;
             storeTT(board.zobristKey, currDepth, prevScore, TT_EXACT, bestMove, 0);
             long long elapsed = limits.startTime > 0 ? (nowMs() - limits.startTime) : 0;
-            std::cout << "info depth " << currDepth << " score cp " << prevScore << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
+            std::cout << "info depth " << currDepth;
+            if (prevScore >= MATE_THRESHOLD) {
+                int mateMoves = (MATE_SCORE - prevScore + 1) / 2;
+                std::cout << " score mate " << mateMoves;
+            } else if (prevScore <= -MATE_THRESHOLD) {
+                int mateMoves = -(MATE_SCORE + prevScore + 1) / 2;
+                std::cout << " score mate " << mateMoves;
+            } else {
+                std::cout << " score cp " << prevScore;
+            }
+            std::cout << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
             std::cout.flush();
         }
 
@@ -237,6 +257,11 @@ int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, in
     searchedNodes++;
     checkTime(limits);
     if (stopSearch) {
+        return 0;
+    }
+
+    // In-search draw detection (repetition, 50-move rule, insufficient material)
+    if (ply > 0 && (board.isFiftyMoveDraw() || board.isRepetition(ply) || board.isInsufficientMaterial())) {
         return 0;
     }
 
