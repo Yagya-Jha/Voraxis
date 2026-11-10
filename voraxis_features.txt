@@ -157,14 +157,15 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 5. TIME MANAGEMENT AND SEARCH CONTROL
 ================================================================================
 
-[ ] 5.1 Time Allocation
-    - Parse wtime, btime, winc, binc, movestogo from UCI "go".
-    - Allocate optimum time and maximum hard time per move.
-    - Reserve safety margin for communication lag.
+[x] 5.1 Time Allocation (COMPLETED)
+    [x] Parse wtime, btime, winc, binc, movestogo, movetime from UCI "go".
+    [x] Allocate optimum time and maximum hard time per move.
+    [x] Reserve safety margin for communication lag.
 
-[ ] 5.2 Search Limits & Interruption
-    - Check time / node limit periodically in search (e.g. every 2048 nodes).
-    - Support UCI "stop" command asynchronously.
+[x] 5.2 Search Limits & Interruption (COMPLETED)
+    [x] Check time / node limit periodically in search (every 2048 nodes).
+    [x] Support UCI "stop" command.
+    [x] Clean unwinding and preservation of best move from last completed depth.
 
 ================================================================================
 6. OPENING BOOK

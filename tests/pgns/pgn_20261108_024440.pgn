@@ -1,0 +1,140 @@
+[Event "?"]
+[Site "?"]
+[Date "2026.11.08"]
+[Round "1"]
+[White "Voraxis"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:14"]
+[GameEndTime "2026-11-08T02:44:55.548 India Standard Time"]
+[GameStartTime "2026-11-08T02:44:41.058 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "138"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 e5 {0.52s} 4. d4 {0.69s} exd4 5. Nxd4 Bb4 6. Bg5 Qe7
+7. f3 d5 8. Nxc6 bxc6 9. Qd4 Bxc3+ 10. Qxc3 Bb7 11. e5 h6 12. Bxf6 gxf6 13. f4
+fxe5 14. Qxe5 Rg8 15. O-O-O Rd8 16. Re1 Qxe5 17. fxe5 d4 18. Rg1 c5 19. Bb5+ Ke7
+20. Re2 Bd5 {0.57s} 21. Kb1 Rg7 {0.67s} 22. Rf2 Ke6 23. Re1 Rxg2 {0.54s}
+24. Rf6+ Ke7 25. Rxh6 c4 {0.61s} 26. Ra6 Rb8 27. a4 Ra8 28. Bc6 Bxc6 29. Rxc6
+Kd8 30. Rxc4 c5 31. Rxc5 Ke8 32. Rc4 Rd8 33. Rd1 Rg5 34. Rcxd4 Rxd4 35. Rxd4
+Rxe5 36. Kc1 Ke7 37. Rc4 Ke8 38. Rc8+ Kd7 39. Rg8 Ke7 40. Kd2 Kf6 41. Kd3 Rd5+
+42. Ke2 Rd4 43. b3 Rh4 44. Rg2 Re4+ 45. Kd1 Re8 46. Rf2+ Ke6 47. Kc1 Rd8 48. a5
+a6 49. h3 Ke7 50. b4 Rd4 51. c3 Rd3 52. c4 Rxh3 53. b5 Rh1+ 54. Kb2 axb5
+55. cxb5 Rh5 56. Re2+ Kf8 57. b6 Rxa5 58. Kc3 Rb5 59. Rb2 Rxb2 60. Kxb2 f5
+61. b7 Ke7 62. b8=Q Ke6 63. Qc8+ Ke5 64. Qb8+ Ke4 65. Qe8+ Kf3 66. Qa8+ Ke3
+67. Qe8+ Kf3 68. Qa8+ Ke3 69. Qe8+ Kf3 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.08"]
+[Round "2"]
+[White "Stockfish"]
+[Black "Voraxis"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:14"]
+[GameEndTime "2026-11-08T02:44:55.658 India Standard Time"]
+[GameStartTime "2026-11-08T02:44:41.076 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "138"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 e5 {0.52s} 4. d4 {0.70s} exd4 5. Nxd4 Bb4 6. Bg5 Qe7
+7. f3 d5 8. Nxc6 bxc6 9. Qd4 Bxc3+ 10. Qxc3 Bb7 11. e5 h6 12. Bxf6 gxf6 13. f4
+fxe5 14. Qxe5 Rg8 15. O-O-O Rd8 16. Re1 Qxe5 17. fxe5 d4 18. Rg1 c5 19. Bb5+ Ke7
+20. Re2 Bd5 {0.58s} 21. Kb1 Rg7 {0.66s} 22. Rf2 Ke6 23. Re1 Rxg2 {0.54s}
+24. Rf6+ Ke7 25. Rxh6 c4 {0.64s} 26. Ra6 Rb8 27. a4 Ra8 28. Bc6 Bxc6 29. Rxc6
+Kd8 30. Rxc4 c5 31. Rxc5 Ke8 32. Rc4 Rd8 33. Rd1 Rg5 34. Rcxd4 Rxd4 35. Rxd4
+Rxe5 36. Kc1 Ke7 37. Rc4 Ke8 38. Rc8+ Kd7 39. Rg8 Ke7 40. Kd2 Kf6 41. Kd3 Rd5+
+42. Ke2 Rd4 43. b3 Rh4 44. Rg2 Re4+ 45. Kd1 Re8 46. Rf2+ Ke6 47. Kc1 Rd8 48. a5
+a6 49. h3 Ke7 50. b4 Rd4 51. c3 Rd3 52. c4 Rxh3 53. b5 Rh1+ 54. Kb2 axb5
+55. cxb5 Rh5 56. Re2+ Kf8 57. b6 Rxa5 58. Kc3 Rb5 59. Rb2 Rxb2 60. Kxb2 f5
+61. b7 Ke7 62. b8=Q Ke6 63. Qc8+ Ke5 64. Qb8+ Ke4 65. Qe8+ Kf3 66. Qa8+ Ke3
+67. Qe8+ Kf3 68. Qa8+ Ke3 69. Qe8+ Kf3 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.08"]
+[Round "3"]
+[White "Voraxis"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:12"]
+[GameEndTime "2026-11-08T02:45:08.498 India Standard Time"]
+[GameStartTime "2026-11-08T02:44:55.553 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "138"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 e5 {0.50s} 4. d4 {0.67s} exd4 5. Nxd4 Bb4 6. Bg5 Qe7
+7. f3 d5 8. Nxc6 bxc6 9. Qd4 Bxc3+ 10. Qxc3 Bb7 11. e5 h6 12. Bxf6 gxf6 13. f4
+fxe5 14. Qxe5 Rg8 15. O-O-O Rd8 16. Re1 Qxe5 17. fxe5 d4 18. Rg1 c5 19. Bb5+ Ke7
+20. Re2 Bd5 {0.56s} 21. Kb1 Rg7 {0.61s} 22. Rf2 Ke6 23. Re1 Rxg2 {0.52s}
+24. Rf6+ Ke7 25. Rxh6 c4 26. Ra6 Rb8 27. a4 Ra8 28. Bc6 Bxc6 29. Rxc6 Kd8
+30. Rxc4 c5 31. Rxc5 Ke8 32. Rc4 Rd8 33. Rd1 Rg5 34. Rcxd4 Rxd4 35. Rxd4 Rxe5
+36. Kc1 Ke7 37. Rc4 Ke8 38. Rc8+ Kd7 39. Rg8 Ke7 40. Kd2 Kf6 41. Kd3 Rd5+
+42. Ke2 Rd4 43. b3 Rh4 44. Rg2 Re4+ 45. Kd1 Re8 46. Rf2+ Ke6 47. Kc1 Rd8 48. a5
+a6 49. h3 Ke7 50. b4 Rd4 51. c3 Rd3 52. c4 Rxh3 53. b5 Rh1+ 54. Kb2 axb5
+55. cxb5 Rh5 56. Re2+ Kf8 57. b6 Rxa5 58. Kc3 Rb5 59. Rb2 Rxb2 60. Kxb2 f5
+61. b7 Ke7 62. b8=Q Ke6 63. Qc8+ Ke5 64. Qb8+ Ke4 65. Qe8+ Kf3 66. Qa8+ Ke3
+67. Qe8+ Kf3 68. Qa8+ Ke3 69. Qe8+ Kf3 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.08"]
+[Round "4"]
+[White "Stockfish"]
+[Black "Voraxis"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:12"]
+[GameEndTime "2026-11-08T02:45:08.609 India Standard Time"]
+[GameStartTime "2026-11-08T02:44:55.662 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "138"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 e5 4. d4 {0.68s} exd4 5. Nxd4 Bb4 6. Bg5 Qe7 7. f3
+d5 8. Nxc6 bxc6 9. Qd4 Bxc3+ 10. Qxc3 Bb7 11. e5 h6 12. Bxf6 gxf6 13. f4 fxe5
+14. Qxe5 Rg8 15. O-O-O Rd8 16. Re1 Qxe5 17. fxe5 d4 18. Rg1 c5 19. Bb5+ Ke7
+20. Re2 Bd5 {0.60s} 21. Kb1 Rg7 {0.61s} 22. Rf2 Ke6 23. Re1 Rxg2 {0.53s}
+24. Rf6+ Ke7 25. Rxh6 c4 26. Ra6 Rb8 27. a4 Ra8 28. Bc6 Bxc6 29. Rxc6 Kd8
+30. Rxc4 c5 31. Rxc5 Ke8 32. Rc4 Rd8 33. Rd1 Rg5 34. Rcxd4 Rxd4 35. Rxd4 Rxe5
+36. Kc1 Ke7 37. Rc4 Ke8 38. Rc8+ Kd7 39. Rg8 Ke7 40. Kd2 Kf6 41. Kd3 Rd5+
+42. Ke2 Rd4 43. b3 Rh4 44. Rg2 Re4+ 45. Kd1 Re8 46. Rf2+ Ke6 47. Kc1 Rd8 48. a5
+a6 49. h3 Ke7 50. b4 Rd4 51. c3 Rd3 52. c4 Rxh3 53. b5 Rh1+ 54. Kb2 axb5
+55. cxb5 Rh5 56. Re2+ Kf8 57. b6 Rxa5 58. Kc3 Rb5 59. Rb2 Rxb2 60. Kxb2 f5
+61. b7 Ke7 62. b8=Q Ke6 63. Qc8+ Ke5 64. Qb8+ Ke4 65. Qe8+ Kf3 66. Qa8+ Ke3
+67. Qe8+ Kf3 68. Qa8+ Ke3 69. Qe8+ Kf3 {Draw by 3-fold repetition} 1/2-1/2
+
+[Event "?"]
+[Site "?"]
+[Date "2026.11.08"]
+[Round "5"]
+[White "Voraxis"]
+[Black "Stockfish"]
+[Result "1/2-1/2"]
+[ECO "A05"]
+[GameDuration "00:00:09"]
+[GameEndTime "2026-11-08T02:45:17.806 India Standard Time"]
+[GameStartTime "2026-11-08T02:45:08.504 India Standard Time"]
+[Opening "Reti Opening"]
+[PlyCount "138"]
+[TimeControl "5+0.1"]
+
+1. Nf3 Nf6 2. Nc3 Nc6 3. e4 e5 4. d4 exd4 5. Nxd4 Bb4 6. Bg5 Qe7 7. f3 d5
+8. Nxc6 bxc6 9. Qd4 Bxc3+ 10. Qxc3 Bb7 11. e5 h6 12. Bxf6 gxf6 13. f4 fxe5
+14. Qxe5 Rg8 15. O-O-O Rd8 16. Re1 Qxe5 17. fxe5 d4 18. Rg1 c5 19. Bb5+ Ke7
+20. Re2 Bd5 21. Kb1 Rg7 22. Rf2 Ke6 23. Re1 Rxg2 24. Rf6+ Ke7 25. Rxh6 c4
+26. Ra6 Rb8 27. a4 Ra8 28. Bc6 Bxc6 29. Rxc6 Kd8 30. Rxc4 c5 31. Rxc5 Ke8
+32. Rc4 Rd8 33. Rd1 Rg5 34. Rcxd4 Rxd4 35. Rxd4 Rxe5 36. Kc1 Ke7 37. Rc4 Ke8
+38. Rc8+ Kd7 39. Rg8 Ke7 40. Kd2 Kf6 41. Kd3 Rd5+ 42. Ke2 Rd4 43. b3 Rh4 44. Rg2
+Re4+ 45. Kd1 Re8 46. Rf2+ Ke6 47. Kc1 Rd8 48. a5 a6 49. h3 Ke7 50. b4 Rd4 51. c3
+Rd3 52. c4 Rxh3 53. b5 Rh1+ 54. Kb2 axb5 55. cxb5 Rh5 56. Re2+ Kf8 57. b6 Rxa5
+58. Kc3 Rb5 59. Rb2 Rxb2 60. Kxb2 f5 61. b7 Ke7 62. b8=Q Ke6 63. Qc8+ Ke5
+64. Qb8+ Ke4 65. Qe8+ Kf3 66. Qa8+ Ke3 67. Qe8+ Kf3 68. Qa8+ Ke3 69. Qe8+
+Kf3 {Draw by 3-fold repetition} 1/2-1/2
+

@@ -1,38 +1,74 @@
 {
-  "timestamp": "20261101_134439",
+  "timestamp": "20261108_024517",
   "voraxis_name": "Voraxis",
   "stockfish_name": "Stockfish",
-  "total_games": 1,
-  "parallel": 1,
+  "total_games": 5,
+  "parallel": 2,
   "time_control": "5+0.1",
   "voraxis_wins": 0,
-  "voraxis_losses": 1,
-  "voraxis_draws": 0,
+  "voraxis_losses": 0,
+  "voraxis_draws": 5,
   "failed_games": 0,
-  "score_percentage": 0.0,
+  "score_percentage": 50.0,
   "voraxis_as_white": {
     "wins": 0,
-    "losses": 1,
-    "draws": 0,
+    "losses": 0,
+    "draws": 3,
     "failed": 0
   },
   "voraxis_as_black": {
     "wins": 0,
     "losses": 0,
-    "draws": 0,
+    "draws": 2,
     "failed": 0
   },
-  "pgn_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\pgns\\pgn_20261101_134430.pgn",
-  "results_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\results\\results_20261101_134430.json",
+  "pgn_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\pgns\\pgn_20261108_024440.pgn",
+  "results_file": "C:\\Users\\Suraj\\Desktop\\PiXeLaTED\\Yagya Study\\CHESS\\Voraxis\\tests\\results\\results_20261108_024440.json",
   "games": [
     {
       "game_number": 1,
       "white": "Voraxis",
       "black": "Stockfish",
-      "result": "0-1",
-      "reason": "White loses on time",
+      "result": "1/2-1/2",
+      "reason": "Draw by 3-fold repetition",
       "voraxis_color": "white",
-      "voraxis_outcome": "loss"
+      "voraxis_outcome": "draw"
+    },
+    {
+      "game_number": 2,
+      "white": "Stockfish",
+      "black": "Voraxis",
+      "result": "1/2-1/2",
+      "reason": "Draw by 3-fold repetition",
+      "voraxis_color": "black",
+      "voraxis_outcome": "draw"
+    },
+    {
+      "game_number": 3,
+      "white": "Voraxis",
+      "black": "Stockfish",
+      "result": "1/2-1/2",
+      "reason": "Draw by 3-fold repetition",
+      "voraxis_color": "white",
+      "voraxis_outcome": "draw"
+    },
+    {
+      "game_number": 4,
+      "white": "Stockfish",
+      "black": "Voraxis",
+      "result": "1/2-1/2",
+      "reason": "Draw by 3-fold repetition",
+      "voraxis_color": "black",
+      "voraxis_outcome": "draw"
+    },
+    {
+      "game_number": 5,
+      "white": "Voraxis",
+      "black": "Stockfish",
+      "result": "1/2-1/2",
+      "reason": "Draw by 3-fold repetition",
+      "voraxis_color": "white",
+      "voraxis_outcome": "draw"
     }
   ]
 }

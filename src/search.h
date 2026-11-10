@@ -3,22 +3,34 @@
 
 #include "board.h"
 #include "movegen.h"
+#include <chrono>
 
 namespace Voraxis {
 namespace Search {
 
-// Chooses a move. Consumes Movegen results (first legal move for now).
-Move getBestMove(Board& board);
+struct SearchLimits {
+    int time = -1;            // Allocated time in ms (-1 = no limit)
+    int depth = -1;           // Max depth limit (-1 = unlimited/default)
+    long long startTime = 0;  // Timestamp in ms when search started
+};
 
-// Minimax search algorithm
-//int minimax(Board& board, int depth, bool isMaximizing);
+extern bool stopSearch;
+extern long long searchedNodes;
 
-int quiescence(Board& board, int alpha, int beta);
+long long nowMs();
+void checkTime(const SearchLimits& limits);
+
+// Chooses a move. Consumes Movegen results.
+Move getBestMove(Board& board, const SearchLimits& limits = SearchLimits());
+
+int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits);
 int scoreMove(const Move move);
 int getPieceValue(int pType);
 std::vector<Move> returnSortedMoves(Board& board);
-//negamax search algorithm
-int negamax(Board& board, int depth, int alpha, int beta);
+
+// Negamax search algorithm
+int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits);
+
 } // namespace Search
 } // namespace Voraxis
 

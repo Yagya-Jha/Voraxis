@@ -63,8 +63,45 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
         board.reset();
     } else if (command == "position") {
         parsePosition(iss, board);
+    } else if (command == "stop") {
+        Search::stopSearch = true;
     } else if (command == "go") {
-        Move bestMove = Search::getBestMove(board);
+        Search::SearchLimits limits;
+        int wtime = -1, btime = -1, winc = 0, binc = 0, movestogo = -1, movetime = -1, depth = -1;
+        std::string token;
+        while (iss >> token) {
+            if (token == "wtime") iss >> wtime;
+            else if (token == "btime") iss >> btime;
+            else if (token == "winc") iss >> winc;
+            else if (token == "binc") iss >> binc;
+            else if (token == "movestogo") iss >> movestogo;
+            else if (token == "movetime") iss >> movetime;
+            else if (token == "depth") iss >> depth;
+        }
+
+        if (movetime > 0) {
+            limits.time = std::max(10, movetime - 15);
+        } else if (wtime >= 0 || btime >= 0) {
+            int myTime = (board.getSideToMove() == WHITE) ? wtime : btime;
+            int myInc = (board.getSideToMove() == WHITE) ? winc : binc;
+            if (myTime > 0) {
+                if (movestogo > 0) {
+                    limits.time = (myTime / (movestogo + 1)) + (myInc * 3 / 4);
+                } else {
+                    limits.time = (myTime / 25) + (myInc / 2);
+                }
+                limits.time = std::min(limits.time, myTime / 2);
+                limits.time = std::max(10, limits.time);
+            }
+        }
+
+        if (depth > 0) {
+            limits.depth = depth;
+        }
+
+        limits.startTime = Search::nowMs();
+
+        Move bestMove = Search::getBestMove(board, limits);
         if (bestMove.from != SQ_NONE) {
             std::cout << "bestmove " << bestMove.toUCI() << "\n";
         } else {
