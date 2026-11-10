@@ -15,10 +15,12 @@ namespace Search {
 
 bool stopSearch = false;
 long long searchedNodes = 0;
+int seldepth = 0;
 int historyTable[12][64];
 Move killerMoves[64][2];
 Move counterMoveTable[64][64];
 
+size_t ttMask = TT_ENTRIES - 1;
 std::vector<TTEntry> ttTable(TT_ENTRIES);
 
 int scoreToTT(int score, int ply) {
@@ -34,7 +36,7 @@ int scoreFromTT(int score, int ply) {
 }
 
 TTEntry* probeTT(uint64_t key) {
-    size_t index = key & (TT_ENTRIES - 1);
+    size_t index = key & ttMask;
     if (ttTable[index].key == key) {
         return &ttTable[index];
     }
@@ -42,7 +44,7 @@ TTEntry* probeTT(uint64_t key) {
 }
 
 void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply) {
-    size_t index = key & (TT_ENTRIES - 1);
+    size_t index = key & ttMask;
     TTEntry& entry = ttTable[index];
 
     if (entry.key == 0 || entry.key == key || depth >= entry.depth) {
@@ -58,6 +60,28 @@ void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int
 
 void clearTT() {
     std::fill(ttTable.begin(), ttTable.end(), TTEntry{});
+}
+
+void setTTSize(size_t mbSize) {
+    mbSize = std::max((size_t)1, std::min(mbSize, (size_t)2048));
+    size_t targetEntries = (mbSize * 1024 * 1024) / sizeof(TTEntry);
+    size_t entries = 1;
+    while (entries * 2 <= targetEntries) {
+        entries *= 2;
+    }
+    ttMask = entries - 1;
+    ttTable.clear();
+    ttTable.resize(entries, TTEntry{});
+}
+
+int getHashFull() {
+    int sampleSize = std::min((size_t)1000, ttTable.size());
+    if (sampleSize == 0) return 0;
+    int used = 0;
+    for (int i = 0; i < sampleSize; ++i) {
+        if (ttTable[i].key != 0) used++;
+    }
+    return (used * 1000) / sampleSize;
 }
 
 long long nowMs() {
@@ -115,6 +139,7 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
 
     Move bestMove = legalMoves[0];
     int prevScore = 0;
+    seldepth = 0;
 
     for (int currDepth = 1; currDepth <= maxDepth; ++currDepth) {
         int delta = 50;
@@ -209,7 +234,12 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
             prevScore = currentIterScore;
             storeTT(board.zobristKey, currDepth, prevScore, TT_EXACT, bestMove, 0);
             long long elapsed = limits.startTime > 0 ? (nowMs() - limits.startTime) : 0;
-            std::cout << "info depth " << currDepth;
+            long long nps = elapsed > 0 ? (searchedNodes * 1000 / elapsed) : (searchedNodes * 1000);
+            int hashfull = getHashFull();
+            std::vector<Move> pv = extractPV(board, currDepth);
+
+            std::cout << "info depth " << currDepth
+                      << " seldepth " << seldepth;
             if (prevScore >= MATE_THRESHOLD) {
                 int mateMoves = (MATE_SCORE - prevScore + 1) / 2;
                 std::cout << " score mate " << mateMoves;
@@ -219,7 +249,19 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
             } else {
                 std::cout << " score cp " << prevScore;
             }
-            std::cout << " nodes " << searchedNodes << " time " << elapsed << " pv " << bestMove.toUCI() << "\n";
+            std::cout << " nodes " << searchedNodes
+                      << " nps " << nps
+                      << " time " << elapsed
+                      << " hashfull " << hashfull
+                      << " pv";
+            if (!pv.empty()) {
+                for (const Move& m : pv) {
+                    std::cout << " " << m.toUCI();
+                }
+            } else {
+                std::cout << " " << bestMove.toUCI();
+            }
+            std::cout << "\n";
             std::cout.flush();
         }
 
@@ -237,6 +279,27 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     }
 
     return bestMove;
+}
+
+bool isPseudoLegal(const Board& b, const Move& m);
+bool isLegalMove(Board& b, const Move& m);
+
+std::vector<Move> extractPV(Board board, int depth) {
+    std::vector<Move> pv;
+    std::vector<uint64_t> seen;
+    for (int i = 0; i < depth && i < 64; ++i) {
+        TTEntry* entry = probeTT(board.zobristKey);
+        if (!entry || entry->key != board.zobristKey || entry->bestMove.from == SQ_NONE) {
+            break;
+        }
+        Move m = entry->bestMove;
+        if (!isLegalMove(board, m)) break;
+        if (std::find(seen.begin(), seen.end(), board.zobristKey) != seen.end()) break;
+        seen.push_back(board.zobristKey);
+        pv.push_back(m);
+        board.applyMove(m);
+    }
+    return pv;
 }
 
 bool isPseudoLegal(const Board& b, const Move& m) {
@@ -402,6 +465,7 @@ std::vector<Move> returnSortedMoves(Board& board, int ply, const Move& prevMove)
 
 int quiescence(Board& board, int alpha, int beta, const SearchLimits& limits, int ply) {
     searchedNodes++;
+    if (ply > seldepth) seldepth = ply;
     checkTime(limits);
     if (stopSearch) {
         return 0;
@@ -530,6 +594,7 @@ int scoreMove(const Board& board, const Move move, int ply) {
 
 int negamax(Board& board, int depth, int alpha, int beta, const SearchLimits& limits, int ply, bool allowNull, Move excludedMove, Move prevMove) {
     searchedNodes++;
+    if (ply > seldepth) seldepth = ply;
     checkTime(limits);
     if (stopSearch) {
         return 0;

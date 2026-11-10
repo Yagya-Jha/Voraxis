@@ -6,9 +6,12 @@
 #include <iostream>
 #include <sstream>
 #include <chrono>
+#include <algorithm>
 
 namespace Voraxis {
 namespace UCI {
+
+UCIOptions options;
 
 static void parsePosition(std::istringstream& iss, Board& board) {
     std::string token;
@@ -56,25 +59,67 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
     if (command == "uci") {
         std::cout << "id name Voraxis 1.0\n";
         std::cout << "id author Voraxis Team\n";
-        std::cout << "option name SyzygyPath type string default <empty>\n";
+        std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
+        std::cout << "option name Clear Hash type button\n";
+        std::cout << "option name Threads type spin default 1 min 1 max 128\n";
+        std::cout << "option name Move Overhead type spin default 10 min 0 max 5000\n";
+        std::cout << "option name OwnBook type check default true\n";
+        std::cout << "option name BookPath type string default books/komodo.bin\n";
+        std::cout << "option name SyzygyPath type string default books/syzygy\n";
         std::cout << "uciok\n";
         std::cout.flush();
     } else if (command == "setoption") {
-        std::string word, optName, optValue;
-        while (iss >> word) {
-            if (word == "name") {
-                iss >> optName;
-            } else if (word == "value") {
+        std::string token, optName, optValue;
+        while (iss >> token) {
+            if (token == "name") {
+                optName = "";
+                while (iss >> token && token != "value") {
+                    if (!optName.empty()) optName += " ";
+                    optName += token;
+                }
+            }
+            if (token == "value") {
                 std::getline(iss, optValue);
                 size_t first = optValue.find_first_not_of(" \t\r\n");
                 if (first != std::string::npos) {
                     optValue = optValue.substr(first);
+                    size_t last = optValue.find_last_not_of(" \t\r\n");
+                    optValue = optValue.substr(0, last + 1);
                 } else {
                     optValue = "";
                 }
+                break;
             }
         }
-        if (optName == "SyzygyPath") {
+
+        std::string lowerName = optName;
+        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+        if (lowerName == "hash") {
+            try {
+                int mb = std::stoi(optValue);
+                options.hashMB = mb;
+                Search::setTTSize(mb);
+            } catch (...) {}
+        } else if (lowerName == "clear hash") {
+            Search::clearTT();
+        } else if (lowerName == "threads") {
+            try {
+                options.threads = std::max(1, std::min(128, std::stoi(optValue)));
+            } catch (...) {}
+        } else if (lowerName == "move overhead") {
+            try {
+                options.moveOverhead = std::max(0, std::min(5000, std::stoi(optValue)));
+            } catch (...) {}
+        } else if (lowerName == "ownbook") {
+            std::string lowerVal = optValue;
+            std::transform(lowerVal.begin(), lowerVal.end(), lowerVal.begin(), ::tolower);
+            options.ownBook = (lowerVal == "true" || lowerVal == "1");
+        } else if (lowerName == "bookpath") {
+            options.bookPath = optValue;
+            Book::init(optValue);
+        } else if (lowerName == "syzygypath") {
+            options.syzygyPath = optValue;
             Syzygy::init(optValue);
         }
     } else if (command == "isready") {
@@ -102,10 +147,11 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
         }
 
         if (movetime > 0) {
-            limits.time = std::max(10, movetime - 15);
+            limits.time = std::max(10, movetime - options.moveOverhead);
         } else if (wtime >= 0 || btime >= 0) {
             int myTime = (board.getSideToMove() == WHITE) ? wtime : btime;
             int myInc = (board.getSideToMove() == WHITE) ? winc : binc;
+            myTime = std::max(10, myTime - options.moveOverhead);
             if (myTime > 0) {
                 if (movestogo > 0) {
                     limits.time = (myTime / (movestogo + 1)) + (myInc * 3 / 4);
@@ -121,12 +167,14 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
             limits.depth = depth;
         }
 
-        // 1. Try opening book move first (up to move 25)
-        Move bookMove = Book::getBookMove(board, 25);
-        if (bookMove.from != SQ_NONE) {
-            std::cout << "bestmove " << bookMove.toUCI() << "\n";
-            std::cout.flush();
-            return;
+        // 1. Try opening book move first (if OwnBook is enabled, up to move 25)
+        if (options.ownBook) {
+            Move bookMove = Book::getBookMove(board, 25);
+            if (bookMove.from != SQ_NONE) {
+                std::cout << "bestmove " << bookMove.toUCI() << "\n";
+                std::cout.flush();
+                return;
+            }
         }
 
         limits.startTime = Search::nowMs();

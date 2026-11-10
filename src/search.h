@@ -42,6 +42,7 @@ constexpr size_t TT_ENTRIES = 1048576; // 1,048,576 entries (~40MB)
 // Global search state and heuristics
 extern bool stopSearch;
 extern long long searchedNodes;
+extern int seldepth;
 extern int historyTable[12][64];
 extern Move killerMoves[64][2];
 extern Move counterMoveTable[64][64];
@@ -57,6 +58,9 @@ int scoreFromTT(int score, int ply);
 TTEntry* probeTT(uint64_t key);
 void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply);
 void clearTT();
+void setTTSize(size_t mbSize);
+int getHashFull();
+std::vector<Move> extractPV(Board board, int depth);
 
 // Move scoring and ordering
 int getPieceValue(int pType);

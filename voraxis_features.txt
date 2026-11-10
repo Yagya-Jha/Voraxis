@@ -209,10 +209,11 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 [x] 9.1 Core UCI (COMPLETED)
     [x] uci, isready, ucinewgame, position, quit.
     [x] go -> bestmove output.
-[ ] 9.2 UCI Search Info Streaming
-    - Periodic "info depth <d> seldepth <sd> score cp/mate <sc> nodes <n> nps <rate> time <ms> pv <moves...>"
-[ ] 9.3 Engine Options Registration
-    - Register Hash, Threads, Move Overhead, etc.
+[x] 9.2 UCI Search Info Streaming (COMPLETED)
+    [x] Periodic "info depth <d> seldepth <sd> score cp/mate <sc> nodes <n> nps <rate> time <ms> hashfull <permille> pv <moves...>"
+    [x] Multi-move Principal Variation line extraction walking the Transposition Table.
+[x] 9.3 Engine Options Registration (COMPLETED)
+    [x] Register and parse Hash (dynamic TT resizing), Clear Hash, Threads, Move Overhead, OwnBook, BookPath, SyzygyPath.
 
 ================================================================================
 10. PERFORMANCE & OPTIMIZATIONS
