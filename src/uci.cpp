@@ -159,7 +159,7 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
                 if (movestogo > 0) {
                     limits.optimumTime = (myTime / (movestogo + 1)) + (myInc * 3 / 4);
                 } else {
-                    limits.optimumTime = (myTime / 25) + (myInc / 2);
+                    limits.optimumTime = (myTime / 20) + (myInc * 4 / 5);
                 }
                 limits.optimumTime = std::min(limits.optimumTime, myTime / 2);
                 limits.optimumTime = std::max(10, limits.optimumTime);

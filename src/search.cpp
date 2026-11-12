@@ -1016,10 +1016,10 @@ Move SearchWorker::searchRoot(bool isMainThread) {
         if (isMainThread && (limits.optimumTime > 0 || limits.time > 0)) {
             long long elapsed = nowMs() - limits.startTime;
             int opt = (limits.optimumTime > 0) ? limits.optimumTime : limits.time;
-            if (currDepth >= 6 && stableCount >= 3 && elapsed >= opt * 0.5) {
+            if (currDepth >= 6 && stableCount >= 3 && elapsed >= opt * 0.6) {
                 break;
             }
-            if (limits.optimumTime > 0 && elapsed >= limits.optimumTime * 0.6) {
+            if (limits.optimumTime > 0 && elapsed >= limits.optimumTime * 0.75) {
                 break;
             } else if (limits.time > 0 && elapsed >= limits.time * 0.5) {
                 break;
