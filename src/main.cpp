@@ -5,12 +5,14 @@
 #include "book.h"
 #include "syzygy_bridge.h"
 #include "threadpool.h"
+#include "evaluate.h"
 #include "uci.h"
 
 int main(int argc, char* argv[]) {
     // Initialize lookup tables and zobrist keys
     Voraxis::Movegen::initAttackTables();
     Voraxis::Board::initZobrist();
+    Voraxis::Evaluate::init();
     Voraxis::Book::init("books/komodo.bin");
     Voraxis::ThreadPool::init(1);
 

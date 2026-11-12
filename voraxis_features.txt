@@ -264,17 +264,17 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 13. PHASE 2: FAST BITBOARD EVALUATION
 ================================================================================
 
-[ ] 13.1 PeSTO Tapered Evaluation
-    - Dual Middlegame / Endgame piece values and PSTs for all 6 piece types (incl. King & Queen).
-    - Smooth game phase interpolation (0..24).
-[ ] 13.2 Bitboard Pawn Structure & Passed Pawns
-    - Branchless bitboard masks for passed pawns (scaled by rank & endgame king proximity).
-    - Isolated and doubled pawn penalties.
-[ ] 13.3 Magic-Bitboard Mobility & Piece Bonuses
-    - Safe-square mobility counting using O(1) Magic Bitboards.
-    - Bishop pair bonus, Rooks on open/semi-open files & 7th rank, Knight outposts.
-[ ] 13.4 Lightweight King Safety
-    - Pawn shield evaluation and attacker-count king zone danger using O(1) magic attacks.
+[x] 13.1 PeSTO Tapered Evaluation (COMPLETED)
+    [x] Dual Middlegame / Endgame piece values and PSTs for all 6 piece types (incl. King & Queen).
+    [x] Smooth game phase interpolation (0..24).
+[x] 13.2 Bitboard Pawn Structure & Passed Pawns (COMPLETED)
+    [x] Branchless bitboard masks for passed pawns (scaled by rank + protected bonus).
+    [x] Isolated and doubled pawn penalties.
+[x] 13.3 Magic-Bitboard Mobility & Piece Bonuses (COMPLETED)
+    [x] Safe-square mobility counting using O(1) Magic Bitboards.
+    [x] Bishop pair bonus, Rooks on open/semi-open files & 7th rank, Knight outposts.
+[x] 13.4 Lightweight King Safety (COMPLETED)
+    [x] Pawn shield evaluation and open file penalties using bitboards (fading out in endgame).
 
 ================================================================================
 14. PHASE 3: SEARCH POLISH, HISTORY & TUNING
