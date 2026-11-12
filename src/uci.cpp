@@ -150,18 +150,21 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
 
         if (movetime > 0) {
             limits.time = std::max(10, movetime - options.moveOverhead);
+            limits.optimumTime = limits.time;
         } else if (wtime >= 0 || btime >= 0) {
             int myTime = (board.getSideToMove() == WHITE) ? wtime : btime;
             int myInc = (board.getSideToMove() == WHITE) ? winc : binc;
             myTime = std::max(10, myTime - options.moveOverhead);
             if (myTime > 0) {
                 if (movestogo > 0) {
-                    limits.time = (myTime / (movestogo + 1)) + (myInc * 3 / 4);
+                    limits.optimumTime = (myTime / (movestogo + 1)) + (myInc * 3 / 4);
                 } else {
-                    limits.time = (myTime / 25) + (myInc / 2);
+                    limits.optimumTime = (myTime / 25) + (myInc / 2);
                 }
-                limits.time = std::min(limits.time, myTime / 2);
-                limits.time = std::max(10, limits.time);
+                limits.optimumTime = std::min(limits.optimumTime, myTime / 2);
+                limits.optimumTime = std::max(10, limits.optimumTime);
+                limits.time = std::min(myTime / 2, limits.optimumTime * 5 / 2);
+                limits.time = std::max(limits.time, limits.optimumTime);
             }
         }
 

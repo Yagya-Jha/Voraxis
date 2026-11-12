@@ -16,6 +16,7 @@ namespace Search {
 std::atomic<bool> stopSearch(false);
 size_t ttMask = TT_ENTRIES - 1;
 std::vector<TTEntry> ttTable(TT_ENTRIES);
+uint8_t ttGen = 0;
 
 static int lmrTable[64][64];
 static bool lmrInitialized = false;
@@ -46,35 +47,46 @@ int scoreFromTT(int score, int ply) {
     return score;
 }
 
+static inline uint64_t packTTData(int16_t score, int16_t staticEval, int8_t depth, uint8_t gen, uint8_t flag) {
+    return ((uint64_t)(uint16_t)score << 48)
+         | ((uint64_t)(uint16_t)staticEval << 32)
+         | ((uint64_t)(uint8_t)depth << 24)
+         | ((uint64_t)(uint8_t)gen << 16)
+         | ((uint64_t)(uint8_t)flag);
+}
+
 TTEntry* probeTT(uint64_t key) {
     size_t index = key & ttMask;
     uint64_t xorKey = ttTable[index].key;
-    uint64_t expected = key ^ ((uint64_t)(uint32_t)ttTable[index].score << 32) ^ ((uint64_t)(uint16_t)ttTable[index].depth << 16) ^ (uint64_t)ttTable[index].flag;
+    uint64_t expected = key ^ packTTData(ttTable[index].score, ttTable[index].staticEval, ttTable[index].depth, ttTable[index].gen, ttTable[index].flag);
     if (xorKey == expected) {
         return &ttTable[index];
     }
     return nullptr;
 }
 
-void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply) {
+void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply, int staticEval) {
     size_t index = key & ttMask;
     TTEntry& entry = ttTable[index];
 
     uint64_t xorKey = entry.key;
-    uint64_t expected = key ^ ((uint64_t)(uint32_t)entry.score << 32) ^ ((uint64_t)(uint16_t)entry.depth << 16) ^ (uint64_t)entry.flag;
+    uint64_t expected = key ^ packTTData(entry.score, entry.staticEval, entry.depth, entry.gen, entry.flag);
     bool isSameKey = (xorKey == expected);
 
-    if (entry.key == 0 || isSameKey || depth >= entry.depth) {
+    if (entry.key == 0 || entry.gen != ttGen || isSameKey || depth >= entry.depth - 1) {
         int ttScore = scoreToTT(score, ply);
-        entry.depth = depth;
-        entry.score = ttScore;
+        int16_t sEval = (staticEval != 0) ? (int16_t)staticEval : (isSameKey ? entry.staticEval : (int16_t)0);
+        entry.depth = (int8_t)depth;
+        entry.score = (int16_t)ttScore;
+        entry.staticEval = sEval;
         entry.flag = flag;
+        entry.gen = ttGen;
         if (bestMove.from != SQ_NONE) {
             entry.bestMove = bestMove;
         } else if (!isSameKey) {
             entry.bestMove = Move();
         }
-        entry.key = key ^ ((uint64_t)(uint32_t)ttScore << 32) ^ ((uint64_t)(uint16_t)depth << 16) ^ (uint64_t)flag;
+        entry.key = key ^ packTTData(entry.score, entry.staticEval, entry.depth, entry.gen, entry.flag);
     }
 }
 
@@ -246,6 +258,7 @@ void SearchWorker::reset() {
     bestMove = Move();
     std::memset(killerMoves, 0, sizeof(killerMoves));
     std::memset(historyTable, 0, sizeof(historyTable));
+    std::memset(conthist, 0, sizeof(conthist));
     std::memset(counterMoveTable, 0, sizeof(counterMoveTable));
     for (int i = 0; i < 128; ++i) {
         staticEvalStack[i] = -MATE_SCORE;
@@ -288,9 +301,12 @@ int SearchWorker::scoreMove(const Move& move, int ply, const Move& ttMove, const
         return 14000;
     }
 
-    // 5. History heuristic
+    // 5. History heuristic & Continuation History
     if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
         int hist = historyTable[move.piece][move.to];
+        if (prevMove.from != SQ_NONE && prevMove.piece >= 0 && prevMove.piece < 12 && prevMove.to >= 0 && prevMove.to < 64) {
+            hist += conthist[prevMove.piece][prevMove.to][move.piece][move.to];
+        }
         if (hist > 0) {
             return 1000 + std::min(hist, 12000);
         }
@@ -542,6 +558,23 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         depth--;
     }
 
+    // 12.2 Improving Heuristic & Static Eval Stack (Probing cached TT staticEval if available)
+    int staticEval = 0;
+    bool improving = false;
+    if (inCheck) {
+        staticEvalStack[ply] = -MATE_SCORE;
+    } else {
+        if (ttHit && entry->staticEval != 0) {
+            staticEval = entry->staticEval;
+        } else {
+            staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
+        }
+        staticEvalStack[ply] = staticEval;
+        if (ply >= 2 && staticEvalStack[ply - 2] != -MATE_SCORE) {
+            improving = (staticEval > staticEvalStack[ply - 2]);
+        }
+    }
+
     // Syzygy tablebase probing
     if (ply > 0 && Syzygy::isLoaded() && excludedMove.from == SQ_NONE) {
         Syzygy::WDLResult wdl = Syzygy::probeWDL(board);
@@ -560,27 +593,14 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
             }
 
             if (tbScore >= beta) {
-                storeTT(board.zobristKey, depth, tbScore, TT_LOWERBOUND, Move(), ply);
+                storeTT(board.zobristKey, depth, tbScore, TT_LOWERBOUND, Move(), ply, staticEval);
                 return tbScore;
             }
             if (tbScore <= alpha) {
-                storeTT(board.zobristKey, depth, tbScore, TT_UPPERBOUND, Move(), ply);
+                storeTT(board.zobristKey, depth, tbScore, TT_UPPERBOUND, Move(), ply, staticEval);
                 return tbScore;
             }
             alpha = std::max(alpha, tbScore);
-        }
-    }
-
-    // 12.2 Improving Heuristic & Static Eval Stack
-    int staticEval = 0;
-    bool improving = false;
-    if (inCheck) {
-        staticEvalStack[ply] = -MATE_SCORE;
-    } else {
-        staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
-        staticEvalStack[ply] = staticEval;
-        if (ply >= 2 && staticEvalStack[ply - 2] != -MATE_SCORE) {
-            improving = (staticEval > staticEvalStack[ply - 2]);
         }
     }
 
@@ -703,7 +723,7 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         if (movesSearched == 0) {
             score = -negamax(targetDepth, -beta, -alpha, ply + 1, true, Move(), move);
         } else {
-            // 12.4 Logarithmic LMR Table & History Adjustment
+            // 12.4 Logarithmic LMR Table & History Adjustment (including Continuation History)
             bool canLMR = (depth >= 3 && movesSearched >= (isPV ? 4 : 2) && isQuiet && !inCheck &&
                            (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])));
             if (canLMR) {
@@ -711,7 +731,11 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                 if (!isPV) R += 1;
                 if (!improving) R += 1;
                 if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
-                    int histAdj = historyTable[move.piece][move.to] / 4096;
+                    int totalHist = historyTable[move.piece][move.to];
+                    if (prevMove.from != SQ_NONE && prevMove.piece >= 0 && prevMove.piece < 12 && prevMove.to >= 0 && prevMove.to < 64) {
+                        totalHist += conthist[prevMove.piece][prevMove.to][move.piece][move.to];
+                    }
+                    int histAdj = totalHist / 4096;
                     if (histAdj > 2) histAdj = 2;
                     if (histAdj < -2) histAdj = -2;
                     R -= histAdj;
@@ -755,8 +779,14 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                     if (historyTable[move.piece][move.to] > 100000) {
                         historyTable[move.piece][move.to] = 100000;
                     }
+                    if (prevMove.from != SQ_NONE && prevMove.piece >= 0 && prevMove.piece < 12 && prevMove.to >= 0 && prevMove.to < 64) {
+                        conthist[prevMove.piece][prevMove.to][move.piece][move.to] += bonus;
+                        if (conthist[prevMove.piece][prevMove.to][move.piece][move.to] > 100000) {
+                            conthist[prevMove.piece][prevMove.to][move.piece][move.to] = 100000;
+                        }
+                    }
                 }
-                // Apply history malus to earlier quiet moves that failed to cause a cutoff
+                // Apply history & conthist malus to earlier quiet moves that failed to cause a cutoff
                 for (int q = 0; q < quietsCount - 1; ++q) {
                     const Move& qm = quietsSearched[q];
                     if (qm.piece >= 0 && qm.piece < 12 && qm.to >= 0 && qm.to < 64) {
@@ -764,11 +794,17 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                         if (historyTable[qm.piece][qm.to] < -100000) {
                             historyTable[qm.piece][qm.to] = -100000;
                         }
+                        if (prevMove.from != SQ_NONE && prevMove.piece >= 0 && prevMove.piece < 12 && prevMove.to >= 0 && prevMove.to < 64) {
+                            conthist[prevMove.piece][prevMove.to][qm.piece][qm.to] -= bonus;
+                            if (conthist[prevMove.piece][prevMove.to][qm.piece][qm.to] < -100000) {
+                                conthist[prevMove.piece][prevMove.to][qm.piece][qm.to] = -100000;
+                            }
+                        }
                     }
                 }
             }
             if (excludedMove.from == SQ_NONE) {
-                storeTT(board.zobristKey, depth, beta, TT_LOWERBOUND, move, ply);
+                storeTT(board.zobristKey, depth, beta, TT_LOWERBOUND, move, ply, staticEval);
             }
             return beta;
         }
@@ -791,13 +827,17 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
 
     if (excludedMove.from == SQ_NONE) {
         TTFlag flag = (alpha > originalAlpha) ? TT_EXACT : TT_UPPERBOUND;
-        storeTT(board.zobristKey, depth, alpha, flag, bestMoveFound, ply);
+        storeTT(board.zobristKey, depth, alpha, flag, bestMoveFound, ply, staticEval);
     }
 
     return alpha;
 }
 
 Move SearchWorker::searchRoot(bool isMainThread) {
+    if (isMainThread) {
+        ttGen++;
+    }
+
     int maxDepth = (limits.depth > 0) ? limits.depth : 64;
     if (limits.depth <= 0 && limits.time <= 0) {
         maxDepth = 5;
@@ -835,6 +875,8 @@ Move SearchWorker::searchRoot(bool isMainThread) {
     }
 
     bestMove = legalMoves[0];
+    Move lastIterBestMove;
+    int stableCount = 0;
     int prevScore = 0;
     int startDepth = isMainThread ? 1 : (1 + (threadId % 2));
 
@@ -922,9 +964,16 @@ Move SearchWorker::searchRoot(bool isMainThread) {
         }
 
         if (completedMoveFound) {
+            if (currentIterBestMove == lastIterBestMove) {
+                stableCount++;
+            } else {
+                stableCount = 0;
+                lastIterBestMove = currentIterBestMove;
+            }
+
             bestMove = currentIterBestMove;
             prevScore = currentIterScore;
-            storeTT(board.zobristKey, currDepth, prevScore, TT_EXACT, bestMove, 0);
+            storeTT(board.zobristKey, currDepth, prevScore, TT_EXACT, bestMove, 0, staticEvalStack[0]);
 
             if (isMainThread) {
                 long long elapsed = limits.startTime > 0 ? (nowMs() - limits.startTime) : 0;
@@ -964,9 +1013,15 @@ Move SearchWorker::searchRoot(bool isMainThread) {
 
         legalMoves = returnSortedMoves(0, Move());
 
-        if (isMainThread && limits.time > 0) {
+        if (isMainThread && (limits.optimumTime > 0 || limits.time > 0)) {
             long long elapsed = nowMs() - limits.startTime;
-            if (elapsed >= limits.time * 0.5) {
+            int opt = (limits.optimumTime > 0) ? limits.optimumTime : limits.time;
+            if (currDepth >= 6 && stableCount >= 3 && elapsed >= opt * 0.5) {
+                break;
+            }
+            if (limits.optimumTime > 0 && elapsed >= limits.optimumTime * 0.6) {
+                break;
+            } else if (limits.time > 0 && elapsed >= limits.time * 0.5) {
                 break;
             }
         }

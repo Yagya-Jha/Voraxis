@@ -280,12 +280,17 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 14. PHASE 3: SEARCH POLISH, HISTORY & TUNING
 ================================================================================
 
-[ ] 14.1 History Malus & Continuation History
-    - Penalize quiet moves searched before a beta cutoff that failed to cut off.
-    - 1-ply / 2-ply continuation history move-pair tables.
-[ ] 14.2 TT Buckets, Aging & Static Eval Caching
-    - Multi-slot TT buckets, generation aging, and cached staticEval in TT entries.
-[ ] 14.3 Smart Time Management (Soft/Hard Limits)
-    - Extend time on root fail-lows or best-move instability; stop early when move is locked in.
+[x] 14.1 History Malus & Continuation History (COMPLETED)
+    [x] Penalize quiet moves searched before a beta cutoff that failed to cut off (history & conthist malus).
+    [x] 1-ply continuation history move-pair table conthist[prevPiece][prevTo][currPiece][currTo].
+    [x] Factored into quiet move ordering score and dynamic LMR depth adjustments.
+[x] 14.2 TT Aging & Static Eval Caching (COMPLETED)
+    [x] 64-bit lockless XOR checksum packing with generation aging (ttGen) and cached staticEval in TT entries.
+    [x] Aging replacement policy prioritizing current search generation over stale entries.
+    [x] Avoids redundant static evaluation calls when valid TT staticEval is cached.
+[x] 14.3 Smart Time Management (Soft/Hard Limits) (COMPLETED)
+    [x] Separate soft limit (optimumTime) and hard limit (time) based on game clock and increment.
+    [x] Root move stability tracking: stop early when best move has remained stable across 3+ iterations at depth >= 6.
+    [x] Proactive iteration cutoff preventing overshooting soft time limits.
 [ ] 14.4 Texel Tuning
     - Mathematically optimize evaluation weights on a quiet game dataset.

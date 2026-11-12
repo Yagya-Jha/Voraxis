@@ -14,7 +14,8 @@ namespace Search {
 
 // Search limits for time management and depth
 struct SearchLimits {
-    int time = -1;            // Allocated time in ms (-1 = no limit)
+    int time = -1;            // Hard time limit in ms (-1 = no limit)
+    int optimumTime = -1;     // Soft time limit in ms (-1 = no limit)
     int depth = -1;           // Max depth limit (-1 = unlimited/default)
     long long startTime = 0;  // Timestamp in ms when search started
 };
@@ -27,12 +28,14 @@ enum TTFlag : uint8_t {
     TT_UPPERBOUND
 };
 
-// Transposition Table Entry
+// Transposition Table Entry (Compact with Aging & Static Eval caching)
 struct TTEntry {
     uint64_t key = 0;
-    int score = 0;
-    int depth = 0;
-    TTFlag flag = TT_NONE;
+    int16_t score = 0;
+    int16_t staticEval = 0;
+    int8_t depth = 0;
+    uint8_t flag = TT_NONE;
+    uint8_t gen = 0;
     Move bestMove;
 };
 
@@ -45,16 +48,17 @@ constexpr size_t TT_ENTRIES = 1048576; // 1,048,576 entries (~40MB)
 extern std::atomic<bool> stopSearch;
 extern size_t ttMask;
 extern std::vector<TTEntry> ttTable;
+extern uint8_t ttGen;
 
 // Time and limits utilities
 long long nowMs();
-void checkTime(const SearchLimits& limits);
+void checkTime(const SearchLimits& limits, long long nodes);
 
 // Transposition Table functions
 int scoreToTT(int score, int ply);
 int scoreFromTT(int score, int ply);
 TTEntry* probeTT(uint64_t key);
-void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply);
+void storeTT(uint64_t key, int depth, int score, TTFlag flag, Move bestMove, int ply, int staticEval = 0);
 void clearTT();
 void setTTSize(size_t mbSize);
 int getHashFull();
@@ -68,6 +72,7 @@ struct SearchWorker {
     long long searchedNodes = 0;
     int seldepth = 0;
     int historyTable[12][64];
+    int conthist[12][64][12][64];
     Move killerMoves[64][2];
     Move counterMoveTable[64][64];
     int staticEvalStack[128];
