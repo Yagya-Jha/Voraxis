@@ -246,19 +246,19 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
 12. ROAD TO 2500+ ELO (DEFEAT STASH v20) - PHASE 1: MODERN SEARCH PRUNING
 ================================================================================
 
-[ ] 12.1 Reverse Futility Pruning (Static Null Move Pruning)
-    - Prune at shallow depths (depth <= 6) when staticEval - margin * depth >= beta.
-[ ] 12.2 Improving Heuristic
-    - Track staticEval on the search stack (ply - 2) to tighten or relax pruning/LMR.
-[ ] 12.3 Late Move Pruning (LMP) & History Pruning
-    - Skip late quiet moves beyond depth-scaled threshold at shallow depths (depth <= 4).
-    - Prune quiet moves with poor history scores at shallow depths.
-[ ] 12.4 Logarithmic LMR Table & History Adjustment
-    - Smooth log(depth) * log(movesSearched) reduction table.
-    - Adjust reduction by PV node, improving flag, and move history score.
-[ ] 12.5 Internal Iterative Reductions (IIR) & Main-Search SEE Pruning
-    - Reduce depth by 1 when no TT move exists at depth >= 4.
-    - Prune losing captures and quiets via SEE at shallow depths.
+[x] 12.1 Reverse Futility Pruning (Static Null Move Pruning) (COMPLETED)
+    [x] Prune at shallow depths (depth <= 6) when staticEval - margin * depth >= beta.
+[x] 12.2 Improving Heuristic (COMPLETED)
+    [x] Track staticEval on the search stack (ply - 2) to tighten or relax pruning/LMR.
+[x] 12.3 Late Move Pruning (LMP) & History Pruning (COMPLETED)
+    [x] Skip late quiet moves beyond depth-scaled threshold at shallow depths (depth <= 4).
+    [x] Prune quiet moves with poor history scores at shallow depths (with history malus on cutoffs).
+[x] 12.4 Logarithmic LMR Table & History Adjustment (COMPLETED)
+    [x] Smooth log(depth) * log(movesSearched) reduction table.
+    [x] Adjust reduction by PV node, improving flag, and move history score.
+[x] 12.5 Internal Iterative Reductions (IIR) & Main-Search SEE Pruning (COMPLETED)
+    [x] Reduce depth by 1 when no TT move exists at depth >= 4.
+    [x] Prune losing captures and quiets via SEE at shallow depths.
 
 ================================================================================
 13. PHASE 2: FAST BITBOARD EVALUATION

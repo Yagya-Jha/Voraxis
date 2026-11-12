@@ -7,6 +7,7 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 
 namespace Voraxis {
@@ -15,6 +16,23 @@ namespace Search {
 std::atomic<bool> stopSearch(false);
 size_t ttMask = TT_ENTRIES - 1;
 std::vector<TTEntry> ttTable(TT_ENTRIES);
+
+static int lmrTable[64][64];
+static bool lmrInitialized = false;
+
+static void initLMRTable() {
+    if (lmrInitialized) return;
+    for (int d = 0; d < 64; ++d) {
+        for (int m = 0; m < 64; ++m) {
+            if (d == 0 || m == 0) {
+                lmrTable[d][m] = 0;
+            } else {
+                lmrTable[d][m] = static_cast<int>(0.75 + std::log(static_cast<double>(d)) * std::log(static_cast<double>(m)) / 2.25);
+            }
+        }
+    }
+    lmrInitialized = true;
+}
 
 int scoreToTT(int score, int ply) {
     if (score >= MATE_THRESHOLD) return score + ply;
@@ -217,6 +235,7 @@ std::vector<Move> extractPV(Board board, int depth) {
 // ----------------------------------------------------------------------------
 
 SearchWorker::SearchWorker(int id) : threadId(id) {
+    initLMRTable();
     reset();
 }
 
@@ -228,6 +247,9 @@ void SearchWorker::reset() {
     std::memset(killerMoves, 0, sizeof(killerMoves));
     std::memset(historyTable, 0, sizeof(historyTable));
     std::memset(counterMoveTable, 0, sizeof(counterMoveTable));
+    for (int i = 0; i < 128; ++i) {
+        staticEvalStack[i] = -MATE_SCORE;
+    }
 }
 
 int SearchWorker::scoreMove(const Move& move, int ply, const Move& ttMove, const Move& prevMove) {
@@ -493,6 +515,8 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         return quiescence(alpha, beta, ply);
     }
 
+    bool isPV = (beta - alpha > 1);
+
     TTEntry* entry = probeTT(board.zobristKey);
     Move ttMove;
     int ttScore = 0;
@@ -511,6 +535,11 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                 return ttScore;
             }
         }
+    }
+
+    // 12.5 Internal Iterative Reductions (IIR)
+    if (depth >= 4 && ttMove.from == SQ_NONE && excludedMove.from == SQ_NONE) {
+        depth--;
     }
 
     // Syzygy tablebase probing
@@ -542,7 +571,26 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    int staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
+    // 12.2 Improving Heuristic & Static Eval Stack
+    int staticEval = 0;
+    bool improving = false;
+    if (inCheck) {
+        staticEvalStack[ply] = -MATE_SCORE;
+    } else {
+        staticEval = (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
+        staticEvalStack[ply] = staticEval;
+        if (ply >= 2 && staticEvalStack[ply - 2] != -MATE_SCORE) {
+            improving = (staticEval > staticEvalStack[ply - 2]);
+        }
+    }
+
+    // 12.1 Reverse Futility Pruning (Static Null Move Pruning)
+    if (!isPV && !inCheck && ply > 0 && depth <= 6 && excludedMove.from == SQ_NONE && std::abs(beta) < MATE_THRESHOLD) {
+        int rfpMargin = (improving ? 65 : 85) * depth;
+        if (staticEval - rfpMargin >= beta) {
+            return staticEval;
+        }
+    }
 
     // 1.12 Razoring
     if (depth <= 3 && !inCheck && ply > 0 && excludedMove.from == SQ_NONE) {
@@ -586,6 +634,8 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
     int originalAlpha = alpha;
     Move bestMoveFound;
     int movesSearched = 0;
+    Move quietsSearched[64];
+    int quietsCount = 0;
     Move move;
     MovePicker picker(*this, ply, ttMove, prevMove, inCheck);
 
@@ -599,13 +649,50 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         bool isQuiet = !isCapture && !isPromotion;
 
         // 1.11 Futility Pruning
-        if (movesSearched > 0 && depth <= 2 && !inCheck && isQuiet && ply > 0 && excludedMove.from == SQ_NONE) {
+        if (movesSearched > 0 && depth <= 2 && !inCheck && isQuiet && ply > 0 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
             if (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])) {
                 int margin = (depth == 1) ? 150 : 300;
                 if (staticEval + margin <= alpha) {
                     continue;
                 }
             }
+        }
+
+        // 12.3 Late Move Pruning (LMP)
+        if (!isPV && !inCheck && isQuiet && movesSearched > 0 && ply > 0 &&
+            depth <= 4 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
+            int lmpThreshold = improving ? (4 + depth * depth) : (3 + (depth * depth) / 2);
+            if (movesSearched >= lmpThreshold) {
+                continue;
+            }
+        }
+
+        // 12.3 History Pruning
+        if (!isPV && !inCheck && isQuiet && movesSearched > 0 && ply > 0 &&
+            depth <= 3 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
+            if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
+                if (historyTable[move.piece][move.to] < -1000 * depth) {
+                    continue;
+                }
+            }
+        }
+
+        // 12.5 Main-Search SEE Pruning
+        if (!isPV && !inCheck && movesSearched > 0 && ply > 0 &&
+            depth <= 5 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
+            if (isQuiet) {
+                if (depth <= 3 && SEE::evaluate(board, move) < -50 * depth) {
+                    continue;
+                }
+            } else if (isCapture && !isPromotion) {
+                if (SEE::evaluate(board, move) < -90 * depth) {
+                    continue;
+                }
+            }
+        }
+
+        if (isQuiet && quietsCount < 64) {
+            quietsSearched[quietsCount++] = move;
         }
 
         board.applyMove(move);
@@ -616,14 +703,23 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         if (movesSearched == 0) {
             score = -negamax(targetDepth, -beta, -alpha, ply + 1, true, Move(), move);
         } else {
-            // 1.9 Late Move Reductions (LMR)
-            bool canLMR = (depth >= 3 && movesSearched >= 3 && isQuiet && !inCheck &&
+            // 12.4 Logarithmic LMR Table & History Adjustment
+            bool canLMR = (depth >= 3 && movesSearched >= (isPV ? 4 : 2) && isQuiet && !inCheck &&
                            (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])));
             if (canLMR) {
-                int R = 1 + (depth >= 6 ? 1 : 0) + (movesSearched >= 8 ? 1 : 0);
-                int reducedDepth = std::max(1, targetDepth - R);
+                int R = lmrTable[std::min(depth, 63)][std::min(movesSearched, 63)];
+                if (!isPV) R += 1;
+                if (!improving) R += 1;
+                if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
+                    int histAdj = historyTable[move.piece][move.to] / 4096;
+                    if (histAdj > 2) histAdj = 2;
+                    if (histAdj < -2) histAdj = -2;
+                    R -= histAdj;
+                }
+                R = std::max(0, R);
+                int reducedDepth = std::max(1, std::min(targetDepth, targetDepth - R));
                 score = -negamax(reducedDepth, -alpha - 1, -alpha, ply + 1, true, Move(), move);
-                if (score > alpha) {
+                if (score > alpha && reducedDepth < targetDepth) {
                     score = -negamax(targetDepth, -alpha - 1, -alpha, ply + 1, true, Move(), move);
                 }
             } else {
@@ -653,10 +749,21 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                 if (prevMove.from != SQ_NONE) {
                     counterMoveTable[prevMove.from][prevMove.to] = move;
                 }
+                int bonus = depth * depth;
                 if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
-                    historyTable[move.piece][move.to] += depth * depth;
+                    historyTable[move.piece][move.to] += bonus;
                     if (historyTable[move.piece][move.to] > 100000) {
                         historyTable[move.piece][move.to] = 100000;
+                    }
+                }
+                // Apply history malus to earlier quiet moves that failed to cause a cutoff
+                for (int q = 0; q < quietsCount - 1; ++q) {
+                    const Move& qm = quietsSearched[q];
+                    if (qm.piece >= 0 && qm.piece < 12 && qm.to >= 0 && qm.to < 64) {
+                        historyTable[qm.piece][qm.to] -= bonus;
+                        if (historyTable[qm.piece][qm.to] < -100000) {
+                            historyTable[qm.piece][qm.to] = -100000;
+                        }
                     }
                 }
             }
@@ -700,6 +807,10 @@ Move SearchWorker::searchRoot(bool isMainThread) {
     if (legalMoves.empty()) {
         return Move();
     }
+
+    staticEvalStack[0] = Movegen::inCheck(board, board.getSideToMove())
+        ? -MATE_SCORE
+        : (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
 
     // Syzygy tablebase DTZ probe at root (Main thread only)
     if (isMainThread && Syzygy::isLoaded()) {

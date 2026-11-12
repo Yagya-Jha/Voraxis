@@ -70,6 +70,7 @@ struct SearchWorker {
     int historyTable[12][64];
     Move killerMoves[64][2];
     Move counterMoveTable[64][64];
+    int staticEvalStack[128];
     Move bestMove;
     int bestScore = 0;
 
