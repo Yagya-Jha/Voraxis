@@ -241,3 +241,51 @@ VORAXIS CHESS ENGINE — DETAILED DEVELOPMENT CHECKLIST
     [x] Thread pool management with native Windows events for low-latency synchronization.
     [x] Depth jitter on helper threads to diversify search branches.
     [x] Aggregated node count and seldepth reporting in UCI search info streaming.
+
+================================================================================
+12. ROAD TO 2500+ ELO (DEFEAT STASH v20) - PHASE 1: MODERN SEARCH PRUNING
+================================================================================
+
+[ ] 12.1 Reverse Futility Pruning (Static Null Move Pruning)
+    - Prune at shallow depths (depth <= 6) when staticEval - margin * depth >= beta.
+[ ] 12.2 Improving Heuristic
+    - Track staticEval on the search stack (ply - 2) to tighten or relax pruning/LMR.
+[ ] 12.3 Late Move Pruning (LMP) & History Pruning
+    - Skip late quiet moves beyond depth-scaled threshold at shallow depths (depth <= 4).
+    - Prune quiet moves with poor history scores at shallow depths.
+[ ] 12.4 Logarithmic LMR Table & History Adjustment
+    - Smooth log(depth) * log(movesSearched) reduction table.
+    - Adjust reduction by PV node, improving flag, and move history score.
+[ ] 12.5 Internal Iterative Reductions (IIR) & Main-Search SEE Pruning
+    - Reduce depth by 1 when no TT move exists at depth >= 4.
+    - Prune losing captures and quiets via SEE at shallow depths.
+
+================================================================================
+13. PHASE 2: FAST BITBOARD EVALUATION
+================================================================================
+
+[ ] 13.1 PeSTO Tapered Evaluation
+    - Dual Middlegame / Endgame piece values and PSTs for all 6 piece types (incl. King & Queen).
+    - Smooth game phase interpolation (0..24).
+[ ] 13.2 Bitboard Pawn Structure & Passed Pawns
+    - Branchless bitboard masks for passed pawns (scaled by rank & endgame king proximity).
+    - Isolated and doubled pawn penalties.
+[ ] 13.3 Magic-Bitboard Mobility & Piece Bonuses
+    - Safe-square mobility counting using O(1) Magic Bitboards.
+    - Bishop pair bonus, Rooks on open/semi-open files & 7th rank, Knight outposts.
+[ ] 13.4 Lightweight King Safety
+    - Pawn shield evaluation and attacker-count king zone danger using O(1) magic attacks.
+
+================================================================================
+14. PHASE 3: SEARCH POLISH, HISTORY & TUNING
+================================================================================
+
+[ ] 14.1 History Malus & Continuation History
+    - Penalize quiet moves searched before a beta cutoff that failed to cut off.
+    - 1-ply / 2-ply continuation history move-pair tables.
+[ ] 14.2 TT Buckets, Aging & Static Eval Caching
+    - Multi-slot TT buckets, generation aging, and cached staticEval in TT entries.
+[ ] 14.3 Smart Time Management (Soft/Hard Limits)
+    - Extend time on root fail-lows or best-move instability; stop early when move is locked in.
+[ ] 14.4 Texel Tuning
+    - Mathematically optimize evaluation weights on a quiet game dataset.
