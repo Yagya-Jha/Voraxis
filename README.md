@@ -1,6 +1,6 @@
 # Voraxis Chess Engine
 
-Voraxis is a high-performance, UCI-compliant chess engine written in C++17. Designed around bitboard architecture, modern search pruning algorithms, fast tapered evaluation, and lockless multi-core scaling.
+Voraxis is a high-performance, UCI-compliant chess engine written in C++17. The project initially started as a handwritten chess engine—implementing core bitboard representations, legal move generation, Negamax search, Alpha-Beta pruning, and Quiescence search by hand—before transitioning into an AI-assisted build to scale advanced search pruning heuristics, fast tapered evaluation, Syzygy tablebases, and multi-threaded Lazy SMP concurrency.
 
 ---
 
