@@ -1,6 +1,6 @@
 # Voraxis Chess Engine
 
-Voraxis is a high-performance, UCI-compliant chess engine written in C++17. Designed around bitboard architecture, modern search pruning algorithms, fast tapered evaluation, and lockless multi-core scaling, Voraxis achieves an estimated playing strength exceeding 2600 Elo (CCRL Blitz).
+Voraxis is a high-performance, UCI-compliant chess engine written in C++17. Designed around bitboard architecture, modern search pruning algorithms, fast tapered evaluation, and lockless multi-core scaling.
 
 ---
 
@@ -117,20 +117,6 @@ Voraxis is a high-performance, UCI-compliant chess engine written in C++17. Desi
   - `BookPath`: Filepath to the Polyglot opening book.
   - `SyzygyPath`: Directory path to 3-4-5 piece Syzygy tablebase files.
   - `Clear Hash`: Command to zero out all transposition table entries.
-
----
-
-## Tournament Results and Rating Progression
-
-Performance tested under strict competitive blitz time controls ($5\text{s} + 0.1\text{s}$ increment, 1 thread, 64 MB Hash) using Cutechess-CLI against calibrated anchor engines:
-
-| Matchup | Games | Score | Win Rate | Elo Performance | Estimated Rating |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Voraxis vs. Stash v14.0** | 100 | 82.0 - 18.0 | 82.0% | +265.4 Elo | ~2319 Elo |
-| **Voraxis-S14 vs. Voraxis-S13** | 20 | 14.0 - 6.0 | 70.0% | +147.2 Elo | Regression Verified |
-| **Voraxis-S14+ vs. Stash v21.0** | 100 | 36.5 - 63.5 | 36.5% | -96.2 Elo | **~2617 Elo** |
-
-*Note: Stash v21.0 holds an official CCRL Blitz rating of 2713 Elo. Scoring 36.5% against this benchmark establishes Voraxis at ~2617 Elo, decisively surpassing the 2500+ Elo milestone.*
 
 ---
 
