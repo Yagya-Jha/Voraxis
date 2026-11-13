@@ -17,27 +17,19 @@ enum WDLResult {
     WDL_WIN = 4
 };
 
-// Initialize Syzygy tablebases from a directory path (semicolon-separated for multiple paths on Windows)
 bool init(const std::string& path);
 
-// Free any allocated tablebase resources
 void free();
 
-// Check if tablebases are active
 bool isLoaded();
 
-// Get the maximum piece count supported by loaded tablebases (e.g., 5)
 int getMaxPieces();
 
-// Probe Win/Draw/Loss during search
-// Returns WDLResult (WDL_FAILED if not in TB, castling possible, or probe error)
 WDLResult probeWDL(const Board& board);
 
-// Probe Distance-To-Zero at root
-// Returns true if a tablebase move was found, populating bestMove and wdlScore.
 bool probeRoot(const Board& board, Move& bestMove, int& wdlScore);
 
-} // namespace Syzygy
-} // namespace Voraxis
+}
+}
 
-#endif // SYZYGY_BRIDGE_H
+#endif

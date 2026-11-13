@@ -34,7 +34,7 @@ bool isDraw(Board& board);
 uint64_t perft(Board& board, int depth);
 bool runPerftSuite();
 
-} // namespace Movegen
-} // namespace Voraxis
+}
+}
 
-#endif // MOVEGEN_H
+#endif

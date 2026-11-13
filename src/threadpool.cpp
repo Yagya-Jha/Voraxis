@@ -43,7 +43,6 @@ void ThreadPool::init(int count) {
     workers.resize(count);
     handles.resize(count);
 
-    // Worker 0 is main thread
     workers[0] = std::make_unique<Search::SearchWorker>(0);
     handles[0] = nullptr;
 
@@ -104,13 +103,12 @@ Move ThreadPool::startSearch(Board& rootBoard, const Search::SearchLimits& limit
 
     Search::stopSearch.store(false);
 
-    // Prepare main thread worker
     workers[0]->reset();
     workers[0]->board = rootBoard;
     workers[0]->limits = limits;
 
 #ifdef _WIN32
-    // Wake up helper threads
+
     for (int i = 1; i < activeThreadCount; ++i) {
         workers[i]->reset();
         workers[i]->board = rootBoard;
@@ -120,10 +118,8 @@ Move ThreadPool::startSearch(Board& rootBoard, const Search::SearchLimits& limit
     }
 #endif
 
-    // Main thread executes iterative deepening and streams UCI info
     Move bestMove = workers[0]->searchRoot(true);
 
-    // Stop all helper threads
     Search::stopSearch.store(true);
 #ifdef _WIN32
     for (int i = 1; i < activeThreadCount; ++i) {
@@ -150,4 +146,4 @@ int ThreadPool::getMaxSeldepth() {
     return maxSel;
 }
 
-} // namespace Voraxis
+}

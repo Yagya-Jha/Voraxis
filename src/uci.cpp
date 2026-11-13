@@ -20,7 +20,7 @@ static void parsePosition(std::istringstream& iss, Board& board) {
 
     if (token == "startpos") {
         board.reset();
-        iss >> token; // Might be "moves" or nothing
+        iss >> token;
     } else if (token == "fen") {
         std::string fen;
         while (iss >> token && token != "moves") {
@@ -172,7 +172,6 @@ void handleCommand(const std::string& line, Board& board, bool& running) {
             limits.depth = depth;
         }
 
-        // 1. Try opening book move first (if OwnBook is enabled, up to move 25)
         if (options.ownBook) {
             Move bookMove = Book::getBookMove(board, 25);
             if (bookMove.from != SQ_NONE) {
@@ -219,5 +218,5 @@ void loop() {
     }
 }
 
-} // namespace UCI
-} // namespace Voraxis
+}
+}

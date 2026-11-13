@@ -788,5 +788,5 @@ constexpr uint64_t PolyglotRandom[781] = {
     0xF8D626AAAF278509ULL,
 };
 
-} // namespace Book
-} // namespace Voraxis
+}
+}

@@ -8,10 +8,9 @@ namespace Evaluate {
 
 void init();
 
-// Scores position from White's perspective (positive = White advantage)
 int evaluate(const Board& board);
 
-} // namespace Evaluate
-} // namespace Voraxis
+}
+}
 
-#endif // EVALUATE_H
+#endif

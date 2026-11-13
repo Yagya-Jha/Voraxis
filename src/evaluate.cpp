@@ -6,16 +6,8 @@
 namespace Voraxis {
 namespace Evaluate {
 
-// ============================================================================
-// 13.1 PeSTO's Piece Values & Piece-Square Tables (Tomasz Michniewski)
-// ============================================================================
-
 constexpr int MG_VAL[6] = { 82, 337, 365, 477, 1025, 0 };
 constexpr int EG_VAL[6] = { 94, 281, 297, 512,  936, 0 };
-
-// Tables defined from White's perspective with A8 = index 0, A1 = index 56.
-// White square sq -> index = sq ^ 56
-// Black square sq -> index = sq
 
 static const int mg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -149,17 +141,12 @@ static const int eg_king_table[64] = {
     -53, -34, -21, -11, -28, -14, -24, -43,
 };
 
-// ============================================================================
-// Bitboard Masks for Fast Evaluation
-// ============================================================================
-
 static uint64_t fileMask[8];
 static uint64_t rankMask[8];
 static uint64_t passedPawnMask[2][64];
 static uint64_t isolatedPawnMask[8];
 static bool evalInitialized = false;
 
-// Passed pawn rank bonuses (index = relative rank 0..7)
 static const int mgPassedBonus[8] = { 0, 5, 10, 20, 35, 60, 100, 0 };
 static const int egPassedBonus[8] = { 0, 10, 20, 35, 60, 100, 160, 0 };
 
@@ -198,7 +185,6 @@ void init() {
     evalInitialized = true;
 }
 
-// Inline fast pawn attacks
 static inline uint64_t whitePawnAttacks(uint64_t pawns) {
     return ((pawns << 7) & ~0x8080808080808080ULL) | ((pawns << 9) & ~0x0101010101010101ULL);
 }
@@ -206,10 +192,6 @@ static inline uint64_t whitePawnAttacks(uint64_t pawns) {
 static inline uint64_t blackPawnAttacks(uint64_t pawns) {
     return ((pawns >> 7) & ~0x0101010101010101ULL) | ((pawns >> 9) & ~0x8080808080808080ULL);
 }
-
-// ============================================================================
-// Full Evaluation Function
-// ============================================================================
 
 int evaluate(const Board& board) {
     if (!evalInitialized) init();
@@ -230,17 +212,11 @@ int evaluate(const Board& board) {
     const uint64_t bQueens = board.pieceBB[B_QUEEN];
     const uint64_t occ = board.occBB[BOTH];
 
-    // Mobility safe zones (squares not attacked by enemy pawns)
     const uint64_t wPawnAttacks = whitePawnAttacks(wPawns);
     const uint64_t bPawnAttacks = blackPawnAttacks(bPawns);
     const uint64_t wMobilityArea = ~bPawnAttacks & ~board.occBB[WHITE];
     const uint64_t bMobilityArea = ~wPawnAttacks & ~board.occBB[BLACK];
 
-    // ------------------------------------------------------------------------
-    // 1. Material, PeSTO PSTs, & Phase Calculation
-    // ------------------------------------------------------------------------
-
-    // Pawns
     uint64_t bb = wPawns;
     while (bb) {
         int sq = __builtin_ctzll(bb);
@@ -249,24 +225,23 @@ int evaluate(const Board& board) {
         mgScore += MG_VAL[PAWN] + mg_pawn_table[idx];
         egScore += EG_VAL[PAWN] + eg_pawn_table[idx];
 
-        // 13.2 Passed pawns
         if ((passedPawnMask[WHITE][sq] & bPawns) == 0) {
             int relRank = squareRank(sq);
             mgScore += mgPassedBonus[relRank];
             egScore += egPassedBonus[relRank];
-            // Protected passed pawn bonus
+
             if (Movegen::getPawnAttacks(WHITE, sq) & wPawns) {
                 mgScore += 15;
                 egScore += 25;
             }
         }
-        // Isolated pawns
+
         int file = squareFile(sq);
         if ((isolatedPawnMask[file] & wPawns) == 0) {
             mgScore -= 12;
             egScore -= 18;
         }
-        // Doubled pawns
+
         if ((passedPawnMask[WHITE][sq] & fileMask[file] & wPawns) != 0) {
             mgScore -= 10;
             egScore -= 15;
@@ -281,31 +256,29 @@ int evaluate(const Board& board) {
         mgScore -= (MG_VAL[PAWN] + mg_pawn_table[idx]);
         egScore -= (EG_VAL[PAWN] + eg_pawn_table[idx]);
 
-        // 13.2 Passed pawns
         if ((passedPawnMask[BLACK][sq] & wPawns) == 0) {
             int relRank = 7 - squareRank(sq);
             mgScore -= mgPassedBonus[relRank];
             egScore -= egPassedBonus[relRank];
-            // Protected passed pawn bonus
+
             if (Movegen::getPawnAttacks(BLACK, sq) & bPawns) {
                 mgScore -= 15;
                 egScore -= 25;
             }
         }
-        // Isolated pawns
+
         int file = squareFile(sq);
         if ((isolatedPawnMask[file] & bPawns) == 0) {
             mgScore += 12;
             egScore += 18;
         }
-        // Doubled pawns
+
         if ((passedPawnMask[BLACK][sq] & fileMask[file] & bPawns) != 0) {
             mgScore += 10;
             egScore += 15;
         }
     }
 
-    // Knights
     bb = wKnights;
     while (bb) {
         int sq = __builtin_ctzll(bb);
@@ -315,13 +288,11 @@ int evaluate(const Board& board) {
         egScore += EG_VAL[KNIGHT] + eg_knight_table[idx];
         gamePhase += 1;
 
-        // Mobility
         uint64_t attacks = Movegen::getKnightAttacks(sq) & wMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore += (mob - 4) * 4;
         egScore += (mob - 4) * 4;
 
-        // Outpost bonus (ranks 4..6, defended by friendly pawn, cannot be attacked by enemy pawn)
         int r = squareRank(sq);
         if (r >= 3 && r <= 5) {
             if ((Movegen::getPawnAttacks(BLACK, sq) & wPawns) &&
@@ -341,13 +312,11 @@ int evaluate(const Board& board) {
         egScore -= (EG_VAL[KNIGHT] + eg_knight_table[idx]);
         gamePhase += 1;
 
-        // Mobility
         uint64_t attacks = Movegen::getKnightAttacks(sq) & bMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore -= (mob - 4) * 4;
         egScore -= (mob - 4) * 4;
 
-        // Outpost bonus
         int r = squareRank(sq);
         if (r >= 2 && r <= 4) {
             if ((Movegen::getPawnAttacks(WHITE, sq) & bPawns) &&
@@ -358,7 +327,6 @@ int evaluate(const Board& board) {
         }
     }
 
-    // Bishops
     bb = wBishops;
     while (bb) {
         int sq = __builtin_ctzll(bb);
@@ -368,7 +336,6 @@ int evaluate(const Board& board) {
         egScore += EG_VAL[BISHOP] + eg_bishop_table[idx];
         gamePhase += 1;
 
-        // Magic mobility
         uint64_t attacks = Movegen::getBishopAttacks(sq, occ) & wMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore += (mob - 7) * 3;
@@ -384,14 +351,12 @@ int evaluate(const Board& board) {
         egScore -= (EG_VAL[BISHOP] + eg_bishop_table[idx]);
         gamePhase += 1;
 
-        // Magic mobility
         uint64_t attacks = Movegen::getBishopAttacks(sq, occ) & bMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore -= (mob - 7) * 3;
         egScore -= (mob - 7) * 3;
     }
 
-    // 13.3 Bishop Pair
     if (__builtin_popcountll(wBishops) >= 2) {
         mgScore += 30;
         egScore += 40;
@@ -401,7 +366,6 @@ int evaluate(const Board& board) {
         egScore -= 40;
     }
 
-    // Rooks
     bb = wRooks;
     while (bb) {
         int sq = __builtin_ctzll(bb);
@@ -411,13 +375,11 @@ int evaluate(const Board& board) {
         egScore += EG_VAL[ROOK] + eg_rook_table[idx];
         gamePhase += 2;
 
-        // Magic mobility
         uint64_t attacks = Movegen::getRookAttacks(sq, occ) & wMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore += (mob - 7) * 2;
         egScore += (mob - 7) * 3;
 
-        // Open & Semi-open files
         int f = squareFile(sq);
         if ((fileMask[f] & wPawns) == 0) {
             if ((fileMask[f] & bPawns) == 0) {
@@ -428,7 +390,7 @@ int evaluate(const Board& board) {
                 egScore += 15;
             }
         }
-        // 7th rank bonus
+
         if (squareRank(sq) == 6 && (bPawns & rankMask[6])) {
             mgScore += 25;
             egScore += 35;
@@ -444,13 +406,11 @@ int evaluate(const Board& board) {
         egScore -= (EG_VAL[ROOK] + eg_rook_table[idx]);
         gamePhase += 2;
 
-        // Magic mobility
         uint64_t attacks = Movegen::getRookAttacks(sq, occ) & bMobilityArea;
         int mob = __builtin_popcountll(attacks);
         mgScore -= (mob - 7) * 2;
         egScore -= (mob - 7) * 3;
 
-        // Open & Semi-open files
         int f = squareFile(sq);
         if ((fileMask[f] & bPawns) == 0) {
             if ((fileMask[f] & wPawns) == 0) {
@@ -461,14 +421,13 @@ int evaluate(const Board& board) {
                 egScore -= 15;
             }
         }
-        // 2nd rank bonus
+
         if (squareRank(sq) == 1 && (wPawns & rankMask[1])) {
             mgScore -= 25;
             egScore -= 35;
         }
     }
 
-    // Queens
     bb = wQueens;
     while (bb) {
         int sq = __builtin_ctzll(bb);
@@ -489,7 +448,6 @@ int evaluate(const Board& board) {
         gamePhase += 4;
     }
 
-    // Kings
     int wKingSq = board.getKingSquare(WHITE);
     int bKingSq = board.getKingSquare(BLACK);
     if (wKingSq != SQ_NONE) {
@@ -501,20 +459,17 @@ int evaluate(const Board& board) {
         egScore -= eg_king_table[bKingSq];
     }
 
-    // ------------------------------------------------------------------------
-    // 13.4 Lightweight King Safety (Middlegame only)
-    // ------------------------------------------------------------------------
     if (wKingSq != SQ_NONE) {
         int f = squareFile(wKingSq);
-        // Kingside pawn shield
+
         if (f >= 5) {
             int shield = __builtin_popcountll(wPawns & (fileMask[5] | fileMask[6] | fileMask[7]) & (rankMask[1] | rankMask[2]));
             mgScore += (shield - 3) * 15;
-        } else if (f <= 2) { // Queenside pawn shield
+        } else if (f <= 2) {
             int shield = __builtin_popcountll(wPawns & (fileMask[0] | fileMask[1] | fileMask[2]) & (rankMask[1] | rankMask[2]));
             mgScore += (shield - 3) * 15;
         }
-        // Open file on king
+
         if ((fileMask[f] & wPawns) == 0) {
             mgScore -= 15;
         }
@@ -522,29 +477,25 @@ int evaluate(const Board& board) {
 
     if (bKingSq != SQ_NONE) {
         int f = squareFile(bKingSq);
-        // Kingside pawn shield
+
         if (f >= 5) {
             int shield = __builtin_popcountll(bPawns & (fileMask[5] | fileMask[6] | fileMask[7]) & (rankMask[6] | rankMask[5]));
             mgScore -= (shield - 3) * 15;
-        } else if (f <= 2) { // Queenside pawn shield
+        } else if (f <= 2) {
             int shield = __builtin_popcountll(bPawns & (fileMask[0] | fileMask[1] | fileMask[2]) & (rankMask[6] | rankMask[5]));
             mgScore -= (shield - 3) * 15;
         }
-        // Open file on king
+
         if ((fileMask[f] & bPawns) == 0) {
             mgScore += 15;
         }
     }
 
-    // ------------------------------------------------------------------------
-    // Game Phase Tapered Interpolation
-    // ------------------------------------------------------------------------
-    // gamePhase ranges from 0 (Endgame: 2 Kings + pawns) to 24 (Startpos: full material)
     int mgPhase = std::min(24, gamePhase);
     int egPhase = 24 - mgPhase;
 
     return (mgScore * mgPhase + egScore * egPhase) / 24;
 }
 
-} // namespace Evaluate
-} // namespace Voraxis
+}
+}

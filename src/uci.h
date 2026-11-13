@@ -21,7 +21,7 @@ extern UCIOptions options;
 void loop();
 void handleCommand(const std::string& line, Board& board, bool& running);
 
-} // namespace UCI
-} // namespace Voraxis
+}
+}
 
-#endif // UCI_H
+#endif

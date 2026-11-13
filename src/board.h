@@ -134,7 +134,6 @@ private:
     void removePiece(int piece, int sq);
 };
 
-// Global castling update lookup array
 extern const uint8_t castlingRightsMask[64];
 
 inline int makeSquare(int file, int rank) { return rank * 8 + file; }
@@ -143,6 +142,6 @@ inline int squareRank(int sq) { return sq >> 3; }
 inline int pieceColor(int piece) { return piece / 6; }
 inline int pieceType(int piece) { return piece % 6; }
 
-} // namespace Voraxis
+}
 
-#endif // BOARD_H
+#endif

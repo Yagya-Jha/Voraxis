@@ -242,10 +242,6 @@ std::vector<Move> extractPV(Board board, int depth) {
     return pv;
 }
 
-// ----------------------------------------------------------------------------
-// SearchWorker Implementation
-// ----------------------------------------------------------------------------
-
 SearchWorker::SearchWorker(int id) : threadId(id) {
     initLMRTable();
     reset();
@@ -266,12 +262,11 @@ void SearchWorker::reset() {
 }
 
 int SearchWorker::scoreMove(const Move& move, int ply, const Move& ttMove, const Move& prevMove) {
-    // 1. TT / Hash move
+
     if (ttMove.from != SQ_NONE && move == ttMove) {
         return 30000;
     }
 
-    // Captures (Winning & equal captures vs Bad captures)
     if (move.captured != NO_PIECE || move.isEnPassant) {
         int seeScore = SEE::evaluate(board, move);
         if (seeScore >= 0) {
@@ -283,25 +278,21 @@ int SearchWorker::scoreMove(const Move& move, int ply, const Move& ttMove, const
         }
     }
 
-    // 3. Queen promotions
     if (move.promotion != NO_PIECE) {
         if (pieceType(move.promotion) == QUEEN) return 18000;
         return 1000;
     }
 
-    // 4. Killer moves
     if (ply < 64 && move == killerMoves[ply][0]) {
         return 16000;
     } else if (ply < 64 && move == killerMoves[ply][1]) {
         return 15000;
     }
 
-    // 6. Countermove heuristic
     if (prevMove.from != SQ_NONE && move == counterMoveTable[prevMove.from][prevMove.to]) {
         return 14000;
     }
 
-    // 5. History heuristic & Continuation History
     if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
         int hist = historyTable[move.piece][move.to];
         if (prevMove.from != SQ_NONE && prevMove.piece >= 0 && prevMove.piece < 12 && prevMove.to >= 0 && prevMove.to < 64) {
@@ -312,7 +303,6 @@ int SearchWorker::scoreMove(const Move& move, int ply, const Move& ttMove, const
         }
     }
 
-    // 8. Remaining quiet moves
     return 0;
 }
 
@@ -553,12 +543,10 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // 12.5 Internal Iterative Reductions (IIR)
     if (depth >= 4 && ttMove.from == SQ_NONE && excludedMove.from == SQ_NONE) {
         depth--;
     }
 
-    // 12.2 Improving Heuristic & Static Eval Stack (Probing cached TT staticEval if available)
     int staticEval = 0;
     bool improving = false;
     if (inCheck) {
@@ -575,7 +563,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // Syzygy tablebase probing
     if (ply > 0 && Syzygy::isLoaded() && excludedMove.from == SQ_NONE) {
         Syzygy::WDLResult wdl = Syzygy::probeWDL(board);
         if (wdl != Syzygy::WDL_FAILED) {
@@ -604,7 +591,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // 12.1 Reverse Futility Pruning (Static Null Move Pruning)
     if (!isPV && !inCheck && ply > 0 && depth <= 6 && excludedMove.from == SQ_NONE && std::abs(beta) < MATE_THRESHOLD) {
         int rfpMargin = (improving ? 65 : 85) * depth;
         if (staticEval - rfpMargin >= beta) {
@@ -612,7 +598,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // 1.12 Razoring
     if (depth <= 3 && !inCheck && ply > 0 && excludedMove.from == SQ_NONE) {
         int razorMargin = 300 + 150 * depth;
         if (staticEval + razorMargin <= alpha) {
@@ -623,7 +608,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // Null move pruning
     if (allowNull && !inCheck && depth >= 3 && ply > 0 && board.hasNonPawnMaterial(board.getSideToMove()) && excludedMove.from == SQ_NONE) {
         if (staticEval >= beta) {
             int R = 2 + (depth >= 6 ? 1 : 0);
@@ -637,7 +621,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         }
     }
 
-    // 1.13 Singular Extensions
     int extension = 0;
     if (ply > 0 && depth >= 6 && ttHit && ttMove.from != SQ_NONE &&
         (entry->flag == TT_LOWERBOUND || entry->flag == TT_EXACT) &&
@@ -668,7 +651,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         bool isPromotion = (move.promotion != NO_PIECE);
         bool isQuiet = !isCapture && !isPromotion;
 
-        // 1.11 Futility Pruning
         if (movesSearched > 0 && depth <= 2 && !inCheck && isQuiet && ply > 0 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
             if (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])) {
                 int margin = (depth == 1) ? 150 : 300;
@@ -678,7 +660,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
             }
         }
 
-        // 12.3 Late Move Pruning (LMP)
         if (!isPV && !inCheck && isQuiet && movesSearched > 0 && ply > 0 &&
             depth <= 4 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
             int lmpThreshold = improving ? (4 + depth * depth) : (3 + (depth * depth) / 2);
@@ -687,7 +668,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
             }
         }
 
-        // 12.3 History Pruning
         if (!isPV && !inCheck && isQuiet && movesSearched > 0 && ply > 0 &&
             depth <= 3 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
             if (move.piece >= 0 && move.piece < 12 && move.to >= 0 && move.to < 64) {
@@ -697,7 +677,6 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
             }
         }
 
-        // 12.5 Main-Search SEE Pruning
         if (!isPV && !inCheck && movesSearched > 0 && ply > 0 &&
             depth <= 5 && excludedMove.from == SQ_NONE && std::abs(alpha) < MATE_THRESHOLD) {
             if (isQuiet) {
@@ -723,7 +702,7 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
         if (movesSearched == 0) {
             score = -negamax(targetDepth, -beta, -alpha, ply + 1, true, Move(), move);
         } else {
-            // 12.4 Logarithmic LMR Table & History Adjustment (including Continuation History)
+
             bool canLMR = (depth >= 3 && movesSearched >= (isPV ? 4 : 2) && isQuiet && !inCheck &&
                            (ply >= 64 || (move != killerMoves[ply][0] && move != killerMoves[ply][1])));
             if (canLMR) {
@@ -786,7 +765,7 @@ int SearchWorker::negamax(int depth, int alpha, int beta, int ply, bool allowNul
                         }
                     }
                 }
-                // Apply history & conthist malus to earlier quiet moves that failed to cause a cutoff
+
                 for (int q = 0; q < quietsCount - 1; ++q) {
                     const Move& qm = quietsSearched[q];
                     if (qm.piece >= 0 && qm.piece < 12 && qm.to >= 0 && qm.to < 64) {
@@ -852,7 +831,6 @@ Move SearchWorker::searchRoot(bool isMainThread) {
         ? -MATE_SCORE
         : (board.getSideToMove() == WHITE ? 1 : -1) * Evaluate::evaluate(board);
 
-    // Syzygy tablebase DTZ probe at root (Main thread only)
     if (isMainThread && Syzygy::isLoaded()) {
         Move tbMove;
         int tbScore = 0;
@@ -933,7 +911,6 @@ Move SearchWorker::searchRoot(bool isMainThread) {
                 break;
             }
 
-            // Aspiration window bounds check
             if (currDepth >= 4) {
                 if (bestScore <= alpha) {
                     alpha = std::max(-MATE_SCORE, alpha - delta);
@@ -1034,5 +1011,5 @@ Move getBestMove(Board& board, const SearchLimits& limits) {
     return ThreadPool::startSearch(board, limits);
 }
 
-} // namespace Search
-} // namespace Voraxis
+}
+}

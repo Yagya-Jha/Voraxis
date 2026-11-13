@@ -25,6 +25,6 @@ public:
     static void cleanup();
 };
 
-} // namespace Voraxis
+}
 
-#endif // THREADPOOL_H
+#endif

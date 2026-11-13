@@ -102,7 +102,6 @@ bool probeRoot(const Board& board, Move& bestMove, int& wdlScore) {
     else if (prom == TB_PROMOTES_BISHOP) expectedPromType = BISHOP;
     else if (prom == TB_PROMOTES_KNIGHT) expectedPromType = KNIGHT;
 
-    // Match with Voraxis legal move list to ensure all Move fields are exact
     Board copyBoard = board;
     std::vector<Move> legalMoves = Movegen::generateLegalMoves(copyBoard);
     for (const auto& m : legalMoves) {
@@ -137,5 +136,5 @@ bool probeRoot(const Board& board, Move& bestMove, int& wdlScore) {
     return true;
 }
 
-} // namespace Syzygy
-} // namespace Voraxis
+}
+}

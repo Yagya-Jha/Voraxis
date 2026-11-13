@@ -12,14 +12,14 @@ static uint64_t zobristEP[65];
 static bool zobristInitialized = false;
 
 const uint8_t castlingRightsMask[64] = {
-    13, 15, 15, 15, 12, 15, 15, 14, // a1=13 (~2), e1=12 (~3), h1=14 (~1)
+    13, 15, 15, 15, 12, 15, 15, 14,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
-     7, 15, 15, 15,  3, 15, 15, 11  // a8=7 (~8), e8=3 (~12), h8=11 (~4)
+     7, 15, 15, 15,  3, 15, 15, 11
 };
 
 static uint64_t pseudoRandom64(uint64_t& state) {
@@ -509,15 +509,12 @@ bool Board::isInsufficientMaterial() const {
     int whiteMinors = wKnights + wBishops;
     int blackMinors = bKnights + bBishops;
 
-    // King vs King
     if (whiteMinors == 0 && blackMinors == 0) return true;
 
-    // King + minor vs King
     if ((whiteMinors == 1 && blackMinors == 0) || (whiteMinors == 0 && blackMinors == 1)) {
         return true;
     }
 
-    // King + Bishop vs King + Bishop of same color
     if (whiteMinors == 1 && blackMinors == 1 && wBishops == 1 && bBishops == 1) {
         int wBsq = __builtin_ctzll(pieceBB[W_BISHOP]);
         int bBsq = __builtin_ctzll(pieceBB[B_BISHOP]);
@@ -529,4 +526,4 @@ bool Board::isInsufficientMaterial() const {
     return false;
 }
 
-} // namespace Voraxis
+}

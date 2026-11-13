@@ -19,21 +19,18 @@ void initAttackTables() {
         int f = squareFile(sq);
         int r = squareRank(sq);
 
-        // White pawn attacks
         pawnAttacks[WHITE][sq] = 0ULL;
         if (r < 7) {
             if (f > 0) pawnAttacks[WHITE][sq] |= (1ULL << makeSquare(f - 1, r + 1));
             if (f < 7) pawnAttacks[WHITE][sq] |= (1ULL << makeSquare(f + 1, r + 1));
         }
 
-        // Black pawn attacks
         pawnAttacks[BLACK][sq] = 0ULL;
         if (r > 0) {
             if (f > 0) pawnAttacks[BLACK][sq] |= (1ULL << makeSquare(f - 1, r - 1));
             if (f < 7) pawnAttacks[BLACK][sq] |= (1ULL << makeSquare(f + 1, r - 1));
         }
 
-        // Knight attacks
         knightAttacks[sq] = 0ULL;
         const int kdf[8] = {-2, -2, -1, -1,  1,  1,  2,  2};
         const int kdr[8] = {-1,  1, -2,  2, -2,  2, -1,  1};
@@ -45,7 +42,6 @@ void initAttackTables() {
             }
         }
 
-        // King attacks
         kingAttacks[sq] = 0ULL;
         const int dirF[8] = {-1, -1, -1,  0, 0,  1, 1, 1};
         const int dirR[8] = {-1,  0,  1, -1, 1, -1, 0, 1};
@@ -131,7 +127,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         targetMask = ~board.occBB[BOTH];
     }
 
-    // 1. Pawn Moves
     if (side == WHITE) {
         uint64_t pawns = board.pieceBB[W_PAWN];
         while (pawns) {
@@ -141,10 +136,9 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
             int f = squareFile(sq);
             int r = squareRank(sq);
 
-            // Single push & Promotions
             int singleSq = sq + 8;
             if (board.pieceOnSq[singleSq] == NO_PIECE) {
-                if (r == 6) { // Promotion is tactical (included in captures)
+                if (r == 6) {
                     if (genCaptures) {
                         pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_QUEEN);
                         pseudoMoves.emplace_back(sq, singleSq, W_PAWN, NO_PIECE, W_ROOK);
@@ -153,7 +147,7 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
                     }
                 } else if (genQuiets) {
                     pseudoMoves.emplace_back(sq, singleSq, W_PAWN);
-                    // Double push
+
                     if (r == 1) {
                         int doubleSq = sq + 16;
                         if (board.pieceOnSq[doubleSq] == NO_PIECE) {
@@ -163,7 +157,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
                 }
             }
 
-            // Captures
             if (genCaptures) {
                 if (f > 0) {
                     int capSq = sq + 7;
@@ -209,10 +202,9 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
             int f = squareFile(sq);
             int r = squareRank(sq);
 
-            // Single push & Promotions
             int singleSq = sq - 8;
             if (board.pieceOnSq[singleSq] == NO_PIECE) {
-                if (r == 1) { // Promotion is tactical (included in captures)
+                if (r == 1) {
                     if (genCaptures) {
                         pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_QUEEN);
                         pseudoMoves.emplace_back(sq, singleSq, B_PAWN, NO_PIECE, B_ROOK);
@@ -221,7 +213,7 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
                     }
                 } else if (genQuiets) {
                     pseudoMoves.emplace_back(sq, singleSq, B_PAWN);
-                    // Double push
+
                     if (r == 6) {
                         int doubleSq = sq - 16;
                         if (board.pieceOnSq[doubleSq] == NO_PIECE) {
@@ -231,7 +223,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
                 }
             }
 
-            // Captures
             if (genCaptures) {
                 if (f > 0) {
                     int capSq = sq - 9;
@@ -270,7 +261,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // 2. Knights
     int knightPiece = (side == WHITE) ? W_KNIGHT : B_KNIGHT;
     uint64_t knights = board.pieceBB[knightPiece];
     while (knights) {
@@ -285,7 +275,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // 3. Bishops
     int bishopPiece = (side == WHITE) ? W_BISHOP : B_BISHOP;
     uint64_t bishops = board.pieceBB[bishopPiece];
     while (bishops) {
@@ -300,7 +289,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // 4. Rooks
     int rookPiece = (side == WHITE) ? W_ROOK : B_ROOK;
     uint64_t rooks = board.pieceBB[rookPiece];
     while (rooks) {
@@ -315,7 +303,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // 5. Queens
     int queenPiece = (side == WHITE) ? W_QUEEN : B_QUEEN;
     uint64_t queens = board.pieceBB[queenPiece];
     while (queens) {
@@ -330,7 +317,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // 6. King & Castling
     int kingPiece = (side == WHITE) ? W_KING : B_KING;
     int kingSq = board.getKingSquare(side);
     if (kingSq != SQ_NONE) {
@@ -342,17 +328,16 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
             pseudoMoves.emplace_back(kingSq, toSq, kingPiece, cap);
         }
 
-        // Castling moves (quiet only)
         if (genQuiets && !inCheck(board, side)) {
             if (side == WHITE) {
-                // White Kingside: e1 -> g1
+
                 if ((board.castlingRights & WHITE_OO) &&
                     board.pieceOnSq[F1] == NO_PIECE && board.pieceOnSq[G1] == NO_PIECE &&
                     board.pieceOnSq[H1] == W_ROOK &&
                     !isSquareAttacked(board, F1, BLACK) && !isSquareAttacked(board, G1, BLACK)) {
                     pseudoMoves.emplace_back(E1, G1, W_KING, NO_PIECE, NO_PIECE, true);
                 }
-                // White Queenside: e1 -> c1
+
                 if ((board.castlingRights & WHITE_OOO) &&
                     board.pieceOnSq[D1] == NO_PIECE && board.pieceOnSq[C1] == NO_PIECE && board.pieceOnSq[B1] == NO_PIECE &&
                     board.pieceOnSq[A1] == W_ROOK &&
@@ -360,14 +345,14 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
                     pseudoMoves.emplace_back(E1, C1, W_KING, NO_PIECE, NO_PIECE, true);
                 }
             } else {
-                // Black Kingside: e8 -> g8
+
                 if ((board.castlingRights & BLACK_OO) &&
                     board.pieceOnSq[F8] == NO_PIECE && board.pieceOnSq[G8] == NO_PIECE &&
                     board.pieceOnSq[H8] == B_ROOK &&
                     !isSquareAttacked(board, F8, WHITE) && !isSquareAttacked(board, G8, WHITE)) {
                     pseudoMoves.emplace_back(E8, G8, B_KING, NO_PIECE, NO_PIECE, true);
                 }
-                // Black Queenside: e8 -> c8
+
                 if ((board.castlingRights & BLACK_OOO) &&
                     board.pieceOnSq[D8] == NO_PIECE && board.pieceOnSq[C8] == NO_PIECE && board.pieceOnSq[B8] == NO_PIECE &&
                     board.pieceOnSq[A8] == B_ROOK &&
@@ -378,7 +363,6 @@ std::vector<Move> generateLegalMoves(Board& board, MoveGenType type) {
         }
     }
 
-    // Filter strictly legal moves
     std::vector<Move> legalMoves;
     legalMoves.reserve(pseudoMoves.size());
     for (const auto& m : pseudoMoves) {
@@ -436,33 +420,29 @@ bool runPerftSuite() {
     Board::initZobrist();
 
     std::vector<PerftTestCase> suite = {
-        // Position 1: Startpos
+
         {"Startpos Depth 1", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 1, 20ULL},
         {"Startpos Depth 2", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2, 400ULL},
         {"Startpos Depth 3", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 3, 8902ULL},
         {"Startpos Depth 4", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 4, 197281ULL},
         {"Startpos Depth 5", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 5, 4865609ULL},
 
-        // Position 2: Kiwipete
         {"Kiwipete Depth 1", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 1, 48ULL},
         {"Kiwipete Depth 2", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 2, 2039ULL},
         {"Kiwipete Depth 3", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 3, 97862ULL},
         {"Kiwipete Depth 4", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 4, 4085603ULL},
 
-        // Position 3
         {"Position 3 Depth 1", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 1, 14ULL},
         {"Position 3 Depth 2", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 2, 191ULL},
         {"Position 3 Depth 3", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 3, 2812ULL},
         {"Position 3 Depth 4", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 4, 43238ULL},
         {"Position 3 Depth 5", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 5, 674624ULL},
 
-        // Position 4
         {"Position 4 Depth 1", "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 1, 6ULL},
         {"Position 4 Depth 2", "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 2, 264ULL},
         {"Position 4 Depth 3", "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 3, 9467ULL},
         {"Position 4 Depth 4", "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4, 422333ULL},
 
-        // Position 5
         {"Position 5 Depth 1", "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 1, 44ULL},
         {"Position 5 Depth 2", "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 2, 1486ULL},
         {"Position 5 Depth 3", "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 3, 62379ULL},
@@ -509,5 +489,5 @@ bool runPerftSuite() {
     return allPassed;
 }
 
-} // namespace Movegen
-} // namespace Voraxis
+}
+}

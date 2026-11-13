@@ -9,19 +9,17 @@
 #include "uci.h"
 
 int main(int argc, char* argv[]) {
-    // Initialize lookup tables and zobrist keys
+
     Voraxis::Movegen::initAttackTables();
     Voraxis::Board::initZobrist();
     Voraxis::Evaluate::init();
     Voraxis::Book::init("books/komodo.bin");
     Voraxis::ThreadPool::init(1);
 
-    // Initialize Syzygy tablebases if available
     if (!Voraxis::Syzygy::init("books/syzygy")) {
         Voraxis::Syzygy::init("../books/syzygy");
     }
 
-    // Check command line arguments for direct testing
     if (argc > 1) {
         std::string arg = argv[1];
         if (arg == "test" || arg == "--test") {
@@ -38,7 +36,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Start UCI command loop
     Voraxis::UCI::loop();
 
     Voraxis::ThreadPool::cleanup();

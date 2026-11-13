@@ -115,5 +115,5 @@ uint64_t getQueenAttacks(int sq, uint64_t occ) {
     return getBishopAttacks(sq, occ) | getRookAttacks(sq, occ);
 }
 
-} // namespace Magic
-} // namespace Voraxis
+}
+}
